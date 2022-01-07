@@ -311,7 +311,7 @@ abstract class Module extends Frontend
 	protected function renderNavigationItems(ItemInterface $rootItem): string
 	{
 		$objTemplate = new FrontendTemplate($this->navigationTpl ?: 'nav_default');
-		$objTemplate->pid = $rootItem->getExtras()['pid'] ?? null;
+		$objTemplate->pid = $rootItem->getExtra('pid');
 		$objTemplate->type = static::class;
 		$objTemplate->cssID = $this->cssID; // see #4897
 		$objTemplate->level = 'level_' . ($rootItem->getLevel() + 1);
