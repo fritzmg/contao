@@ -284,17 +284,17 @@ abstract class Module extends Frontend
 		/** @var FrontendMenuBuilder $menuBuilder */
 		$menuBuilder = System::getContainer()->get('contao.menu.frontend_builder');
 		$root = System::getContainer()->get('knp_menu.factory')->createItem('root');
-	
+
 		$options = $this->arrData;
 		$options += array('isSitemap' => $this instanceof ModuleSitemap);
-	
+
 		$menu = $menuBuilder->getMenu($root, $pid, $level, $host, $options);
-	
+
 		if (!$menu->count())
 		{
 			return '';
 		}
-	
+
 		return $this->renderNavigationItems($menu, $level);
 	}
 
@@ -306,36 +306,37 @@ abstract class Module extends Frontend
 		$objTemplate->cssID = $this->cssID; // see #4897
 		$objTemplate->level = 'level_' . $level;
 		$objTemplate->module = $this; // see #155
-	
+
 		$objTemplate->items = $this->compileMenuItems($rootItem, $level);
-	
+
 		return !empty($objTemplate->items) ? $objTemplate->parse() : '';
 	}
 
 	protected function compileMenuItems(ItemInterface $rootItem, int $level): array
 	{
 		$items = array();
-	
+
 		foreach ($rootItem as $menuItem)
 		{
 			$subitems = '';
 
-			if ($menuItem->hasChildren() && $menuItem->getDisplayChildren()) {
+			if ($menuItem->hasChildren() && $menuItem->getDisplayChildren())
+			{
 				$subitems = $this->renderNavigationItems($menuItem, $level + 1);
 			}
-	
+
 			$items[] = $this->compileMenuItem($menuItem, $subitems);
 		}
-	
+
 		// Add first and last classes
 		if (!empty($items))
 		{
 			$last = \count($items) - 1;
-	
+
 			$items[0]['class'] = trim($items[0]['class'] . ' first');
 			$items[$last]['class'] = trim($items[$last]['class'] . ' last');
 		}
-	
+
 		return $items;
 	}
 
