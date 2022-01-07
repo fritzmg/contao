@@ -274,61 +274,69 @@ abstract class Module extends Frontend
 	 *
 	 * @return string
 	 */
-	protected function renderNavigation($pid, $level=1, $host=null/*, $language=null*/)
+	protected function renderNavigation($pid, $level=1, $host=null, $language=null)
 	{
+		if (null !== $language)
+		{
+			trigger_deprecation('contao/core-bundle', '4.13', 'Passing a custom language to Module::renderNavigation() has been deprecated and will no longer work in Contao 5.0.');
+		}
+
 		/** @var FrontendMenuBuilder $menuBuilder */
 		$menuBuilder = System::getContainer()->get('contao.menu.frontend_builder');
 		$root = System::getContainer()->get('knp_menu.factory')->createItem('root');
-
+	
 		$options = $this->arrData;
 		$options += array('isSitemap' => $this instanceof ModuleSitemap);
-
+	
 		$menu = $menuBuilder->getMenu($root, $pid, $level, $host, $options);
-
+	
 		if (!$menu->count())
 		{
 			return '';
 		}
+	
+		return $this->renderNavigationItems($menu, $level);
+	}
 
+	protected function renderNavigationItems(ItemInterface $rootItem, int $level): string
+	{
 		$objTemplate = new FrontendTemplate($this->navigationTpl ?: 'nav_default');
-		$objTemplate->pid = $pid;
+		$objTemplate->pid = $rootItem->getExtras()['pid'] ?? null;
 		$objTemplate->type = static::class;
 		$objTemplate->cssID = $this->cssID; // see #4897
-		$objTemplate->level = 'level_' . $level++;
+		$objTemplate->level = 'level_' . $level;
 		$objTemplate->module = $this; // see #155
+	
+		$objTemplate->items = $this->compileMenuItems($rootItem, $level);
+	
+		return !empty($objTemplate->items) ? $objTemplate->parse() : '';
+	}
 
+	protected function compileMenuItems(ItemInterface $rootItem, int $level): array
+	{
 		$items = array();
-
-		// Browse subpages
-		/** @var ItemInterface $menuItem */
-		foreach ($menu as $menuItem)
+	
+		foreach ($rootItem as $menuItem)
 		{
 			$subitems = '';
 
-			// Check whether there will be subpages
-			if (
-				$menuItem->hasChildren()
-				&& $menuItem->getDisplayChildren()
-				&& null !== $pageModel = $menuItem->getExtra('pageModel')
-			) {
-				$subitems = $this->renderNavigation($pageModel->id, $level, $host);
+			if ($menuItem->hasChildren() && $menuItem->getDisplayChildren()) {
+				$subitems = $this->renderNavigationItems($menuItem, $level + 1);
 			}
-
+	
 			$items[] = $this->compileMenuItem($menuItem, $subitems);
 		}
-
-		// Add classes first and last
+	
+		// Add first and last classes
 		if (!empty($items))
 		{
 			$last = \count($items) - 1;
-
+	
 			$items[0]['class'] = trim($items[0]['class'] . ' first');
 			$items[$last]['class'] = trim($items[$last]['class'] . ' last');
 		}
-
-		$objTemplate->items = $items;
-
-		return !empty($items) ? $objTemplate->parse() : '';
+	
+		return $items;
 	}
 
 	/**
@@ -345,7 +353,7 @@ abstract class Module extends Frontend
 	 */
 	protected function compileNavigationRow(PageModel $objPage, PageModel $objSubpage, $subitems, $href)
 	{
-		trigger_deprecation('contao/core-bundle', '4.13', 'Using Module::compileNavigationRow() has been deprecated and will no longer work Contao 5.0.');
+		trigger_deprecation('contao/core-bundle', '4.13', 'Using Module::compileNavigationRow() has been deprecated and will no longer work in Contao 5.0.');
 
 		$row = $objSubpage->row();
 		$trail = \in_array($objSubpage->id, $objPage->trail);
@@ -449,7 +457,7 @@ abstract class Module extends Frontend
 	 */
 	protected static function getPublishedSubpagesByPid($intPid, $blnShowHidden=false, $blnIsSitemap=false): ?array
 	{
-		trigger_deprecation('contao/core-bundle', '4.13', 'Using Module::getPublishedSubpagesByPid() has been deprecated and will no longer work Contao 5.0.');
+		trigger_deprecation('contao/core-bundle', '4.13', 'Using Module::getPublishedSubpagesByPid() has been deprecated and will no longer work in Contao 5.0.');
 
 		$time = Date::floorToMinute();
 		$tokenChecker = System::getContainer()->get('contao.security.token_checker');
@@ -494,7 +502,7 @@ abstract class Module extends Frontend
 	 */
 	protected static function getPublishedSubpagesWithoutGuestsByPid($intPid, $blnShowHidden=false, $blnIsSitemap=false): ?array
 	{
-		trigger_deprecation('contao/core-bundle', '4.9', 'Using Module::getPublishedSubpagesWithoutGuestsByPid() has been deprecated and will no longer work Contao 5.0. Use Module::getPublishedSubpagesByPid() instead and filter the guests pages yourself.');
+		trigger_deprecation('contao/core-bundle', '4.9', 'Using Module::getPublishedSubpagesWithoutGuestsByPid() has been deprecated and will no longer work in Contao 5.0. Use Module::getPublishedSubpagesByPid() instead and filter the guests pages yourself.');
 
 		$time = Date::floorToMinute();
 		$tokenChecker = System::getContainer()->get('contao.security.token_checker');
