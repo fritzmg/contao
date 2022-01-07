@@ -274,8 +274,18 @@ abstract class Module extends Frontend
 	 *
 	 * @return string
 	 */
-	protected function renderNavigation($pid, $level=1, $host=null, $language=null)
+	protected function renderNavigation($pid, $level=null, $host=null, $language=null)
 	{
+		if (null !== $level)
+		{
+			trigger_deprecation('contao/core-bundle', '4.13', 'Passing a custom level to Module::renderNavigation() has been deprecated and will no longer work in Contao 5.0.');
+		}
+
+		if (null !== $host)
+		{
+			trigger_deprecation('contao/core-bundle', '4.13', 'Passing a custom host to Module::renderNavigation() has been deprecated and will no longer work in Contao 5.0.');
+		}
+
 		if (null !== $language)
 		{
 			trigger_deprecation('contao/core-bundle', '4.13', 'Passing a custom language to Module::renderNavigation() has been deprecated and will no longer work in Contao 5.0.');
@@ -288,31 +298,31 @@ abstract class Module extends Frontend
 		$options = $this->arrData;
 		$options += array('isSitemap' => $this instanceof ModuleSitemap);
 
-		$menu = $menuBuilder->getMenu($root, $pid, $level, $host, $options);
+		$menu = $menuBuilder->getMenu($root, $pid, $options);
 
 		if (!$menu->count())
 		{
 			return '';
 		}
 
-		return $this->renderNavigationItems($menu, $level);
+		return $this->renderNavigationItems($menu);
 	}
 
-	protected function renderNavigationItems(ItemInterface $rootItem, int $level): string
+	protected function renderNavigationItems(ItemInterface $rootItem): string
 	{
 		$objTemplate = new FrontendTemplate($this->navigationTpl ?: 'nav_default');
 		$objTemplate->pid = $rootItem->getExtras()['pid'] ?? null;
 		$objTemplate->type = static::class;
 		$objTemplate->cssID = $this->cssID; // see #4897
-		$objTemplate->level = 'level_' . $level;
+		$objTemplate->level = 'level_' . ($rootItem->getLevel() + 1);
 		$objTemplate->module = $this; // see #155
 
-		$objTemplate->items = $this->compileMenuItems($rootItem, $level);
+		$objTemplate->items = $this->compileMenuItems($rootItem);
 
 		return !empty($objTemplate->items) ? $objTemplate->parse() : '';
 	}
 
-	protected function compileMenuItems(ItemInterface $rootItem, int $level): array
+	protected function compileMenuItems(ItemInterface $rootItem): array
 	{
 		$items = array();
 
@@ -322,7 +332,7 @@ abstract class Module extends Frontend
 
 			if ($menuItem->hasChildren() && $menuItem->getDisplayChildren())
 			{
-				$subitems = $this->renderNavigationItems($menuItem, $level + 1);
+				$subitems = $this->renderNavigationItems($menuItem);
 			}
 
 			$items[] = $this->compileMenuItem($menuItem, $subitems);
