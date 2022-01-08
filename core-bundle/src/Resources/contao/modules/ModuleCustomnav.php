@@ -69,10 +69,10 @@ class ModuleCustomnav extends Module
 		$menuBuilder = System::getContainer()->get('contao.menu.frontend_builder');
 		$root = System::getContainer()->get('knp_menu.factory')->createItem('root');
 
-		$menu = $menuBuilder->getMenu($root, 0, $this->arrData);
+		$menu = $menuBuilder->getMenu(0, $this->arrData);
 
 		// Return if there are no pages
-		if (!$menu->count())
+		if (null === $menu || !$menu->count())
 		{
 			return;
 		}
