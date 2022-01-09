@@ -94,8 +94,8 @@ class FrontendMenuBuilder
         $pages = $this->getPages($pid, $options);
 
         /** @var PageModel $page */
-        foreach ($pages as ['page' => $page, 'hasSubpages' => $hasSubpages]) {
-            $child = $this->getMenu((int) $page->id, $options);
+        foreach ($pages as ['page' => $childPage, 'hasSubpages' => $hasSubpages]) {
+            $child = $this->getMenu((int) $childPage->id, array_merge($options, ['loadSubpages' => $hasSubpages]));
 
             if (null !== $child) {
                 $item->addChild($child);
@@ -193,6 +193,10 @@ class FrontendMenuBuilder
         // Custom page choice like, e.g., for the custom navigation module
         if (0 === $pid && $options['pages']) {
             return $this->findPagesByIds($options['pages']);
+        }
+
+        if (false === ($options['loadSubpages'] ?? null)) {
+            return [];
         }
 
         return $this->findPagesByPid($pid, (bool) $options['showHidden']);
