@@ -76,16 +76,14 @@ class FrontendMenuBuilder
             'isSitemap' => false,
         ], $options);
 
-        $item = null;
-
-        if (0 !== $pid && null !== ($currentPage = $this->pageModelAdapter->findWithDetails($pid))) {
-            /** @var PageModel $currentPage */
-            $item = $this->getItem($currentPage, $options);
-        }
-
-        // Create a root item if no page is the root (custom nav)
-        if (null === $item && 0 === $pid) {
-            $item = $this->factory->createItem('root');
+        if (0 === $pid) {
+            // Create an empty root item if custom pages are defined for the navigation
+            if (!empty($options['pages'])) {
+                $item = $this->factory->createItem('root');
+            }
+        } elseif (null !== ($page = $this->pageModelAdapter->findWithDetails($pid))) {
+            /** @var PageModel $page */
+            $item = $this->getItem($page, $options);
         }
 
         if (null === $item) {
@@ -105,15 +103,15 @@ class FrontendMenuBuilder
         }
 
         $level = $item->getLevel() + 1;
-        $activePage = $this->getActivePage();
+        $currentPage = $this->getCurrentPage();
 
         $displayChildren = !$options['showLevel']
                 || $options['showLevel'] > $level
-                || (!$options['hardLimit'] && $activePage && ($activePage->id === $page->id || \in_array($activePage->id, $this->database->getChildRecords($page->id, 'tl_page'), false)));
+                || (!$options['hardLimit'] && $currentPage && ($currentPage->id === $page->id || \in_array($currentPage->id, $this->database->getChildRecords($page->id, 'tl_page'), false)));
 
         $item->setDisplayChildren($displayChildren);
 
-        $this->populateMenuItem($item, $currentPage, $options);
+        $this->populateMenuItem($item, $page, $options);
 
         $menuEvent = new FrontendMenuEvent($this->factory, $item, $pid, $options);
         $this->dispatcher->dispatch($menuEvent);
@@ -161,7 +159,7 @@ class FrontendMenuBuilder
         return $item;
     }
 
-    private function getActivePage(): ?PageModel
+    private function getCurrentPage(): ?PageModel
     {
         $request = $this->requestStack->getMainRequest();
 
@@ -303,24 +301,24 @@ class FrontendMenuBuilder
     private function populateMenuItem(ItemInterface $item, PageModel $page, array $options = []): void
     {
         $request = $this->requestStack->getCurrentRequest();
-        $activePage = $this->getActivePage();
+        $currentPage = $this->getCurrentPage();
 
         $extra = $page->row();
-        $isTrail = $activePage && \in_array($page->id, $activePage->trail, false);
+        $isTrail = $currentPage && \in_array($page->id, $currentPage->trail, false);
 
         // Use the path without query string to check for active pages (see #480)
         $path = ltrim($request->getPathInfo(), '/');
 
-        $isActive = $activePage
+        $isActive = $currentPage
             && $item->getUri() === $path
             && !($options['isSitemap'] ?? false)
-            && (($activePage->id === $page->id) || ('forward' === $page->type && $activePage->id === $page->jumpTo));
+            && (($currentPage->id === $page->id) || ('forward' === $page->type && $currentPage->id === $page->jumpTo));
 
         $item->setCurrent($isActive);
 
         $extra['isActive'] = $isActive;
         $extra['isTrail'] = $isActive ? false : $isTrail;
-        $extra['class'] = $this->getCssClass($page, $activePage, $isActive, $isTrail, $item->hasChildren() && $item->getDisplayChildren());
+        $extra['class'] = $this->getCssClass($page, $currentPage, $isActive, $isTrail, $item->hasChildren() && $item->getDisplayChildren());
         $extra['title'] = StringUtil::specialchars($page->title, true);
         $extra['pageTitle'] = StringUtil::specialchars($page->pageTitle, true);
         $extra['description'] = str_replace(["\n", "\r"], [' ', ''], (string) $page->description);
@@ -363,11 +361,11 @@ class FrontendMenuBuilder
         $item->setExtra('pageModel', $page);
     }
 
-    private function getCssClass(PageModel $page, ?PageModel $activePage, bool $isActive, bool $isTrail, bool $hasSubmenu): string
+    private function getCssClass(PageModel $page, ?PageModel $currentPage, bool $isActive, bool $isTrail, bool $hasSubmenu): string
     {
         $classes = [];
 
-        $isForward = $activePage && 'forward' === $page->type && $activePage->id === $page->jumpTo;
+        $isForward = $currentPage && 'forward' === $page->type && $currentPage->id === $page->jumpTo;
 
         if ($hasSubmenu) {
             $classes[] = 'submenu';
@@ -382,7 +380,7 @@ class FrontendMenuBuilder
         }
 
         // Mark pages on the same level (see #2419)
-        if ($activePage && !$isActive && $page->pid === $activePage->pid) {
+        if ($currentPage && !$isActive && $page->pid === $currentPage->pid) {
             $classes[] = 'sibling';
         }
 
