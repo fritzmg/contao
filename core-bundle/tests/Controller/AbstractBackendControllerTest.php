@@ -100,6 +100,7 @@ class AbstractBackendControllerTest extends TestCase
             'learnMore' => 'learn more',
             'menu' => '<menu>',
             'headerMenu' => '<header_menu>',
+            'ua' => '',
             'badgeTitle' => '',
             'foo' => 'bar',
         ];
