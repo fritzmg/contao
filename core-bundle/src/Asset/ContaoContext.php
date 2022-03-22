@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Asset;
 
-use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\CoreBundle\Routing\PageModelLocator;
 use Contao\PageModel;
 use Symfony\Component\Asset\Context\ContextInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -23,14 +23,14 @@ use Symfony\Component\HttpFoundation\RequestStack;
 class ContaoContext implements ContextInterface
 {
     private RequestStack $requestStack;
-    private ContaoFramework $framework;
+    private PageModelLocator $pageModelLocator;
     private string $field;
     private bool $debug;
 
-    public function __construct(RequestStack $requestStack, ContaoFramework $framework, string $field, bool $debug = false)
+    public function __construct(RequestStack $requestStack, PageModelLocator $pageModelLocator, string $field, bool $debug = false)
     {
         $this->requestStack = $requestStack;
-        $this->framework = $framework;
+        $this->pageModelLocator = $pageModelLocator;
         $this->field = $field;
         $this->debug = $debug;
     }
@@ -41,7 +41,7 @@ class ContaoContext implements ContextInterface
             return '';
         }
 
-        if ($this->debug || '' === ($staticUrl = $this->getFieldValue($this->getPageModel()))) {
+        if ($this->debug || '' === ($staticUrl = $this->getFieldValue($this->pageModelLocator->getCurrentPageModel()))) {
             return $request->getBasePath();
         }
 
@@ -53,7 +53,7 @@ class ContaoContext implements ContextInterface
 
     public function isSecure(): bool
     {
-        $page = $this->getPageModel();
+        $page = $this->pageModelLocator->getCurrentPageModel();
 
         if (null !== $page) {
             return (bool) $page->loadDetails()->rootUseSSL;
@@ -78,37 +78,6 @@ class ContaoContext implements ContextInterface
         }
 
         return '';
-    }
-
-    private function getPageModel(): ?PageModel
-    {
-        $request = $this->requestStack->getMainRequest();
-
-        if (null === $request || !$request->attributes->has('pageModel')) {
-            if (isset($GLOBALS['objPage']) && $GLOBALS['objPage'] instanceof PageModel) {
-                return $GLOBALS['objPage'];
-            }
-
-            return null;
-        }
-
-        $pageModel = $request->attributes->get('pageModel');
-
-        if ($pageModel instanceof PageModel) {
-            return $pageModel;
-        }
-
-        if (
-            isset($GLOBALS['objPage'])
-            && $GLOBALS['objPage'] instanceof PageModel
-            && (int) $GLOBALS['objPage']->id === (int) $pageModel
-        ) {
-            return $GLOBALS['objPage'];
-        }
-
-        $this->framework->initialize();
-
-        return $this->framework->getAdapter(PageModel::class)->findByPk((int) $pageModel);
     }
 
     /**

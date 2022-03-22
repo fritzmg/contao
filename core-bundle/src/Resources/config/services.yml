@@ -606,6 +606,12 @@ services:
             - '@database_connection'
             - '@contao.routing.page_registry'
 
+    contao.routing.page_model_locator:
+        class: Contao\CoreBundle\Routing\PageModelLocator
+        arguments:
+            - '@request_stack'
+            - '@contao.framework'
+
     contao.routing.page_registry:
         class: Contao\CoreBundle\Routing\Page\PageRegistry
         public: true

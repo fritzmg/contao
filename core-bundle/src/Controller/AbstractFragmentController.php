@@ -14,6 +14,7 @@ namespace Contao\CoreBundle\Controller;
 
 use Contao\CoreBundle\EventListener\SubrequestCacheSubscriber;
 use Contao\CoreBundle\Fragment\FragmentOptionsAwareInterface;
+use Contao\CoreBundle\Routing\PageModelLocator;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\FragmentTemplate;
 use Contao\FrontendTemplate;
@@ -43,6 +44,7 @@ abstract class AbstractFragmentController extends AbstractController implements 
 
         $services['request_stack'] = RequestStack::class;
         $services['contao.routing.scope_matcher'] = ScopeMatcher::class;
+        $services['contao.routing.page_model_locator'] = PageModelLocator::class;
 
         return $services;
     }
