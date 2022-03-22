@@ -585,7 +585,7 @@ class Versions extends Controller
 		$objTemplate->from = $intFrom;
 		$objTemplate->showLabel = StringUtil::specialchars($GLOBALS['TL_LANG']['MSC']['showDifferences']);
 		$objTemplate->theme = Backend::getTheme();
-		$objTemplate->base = Environment::get('base');
+		//$objTemplate->base = Environment::get('base');
 		$objTemplate->language = $GLOBALS['TL_LANGUAGE'];
 		$objTemplate->title = StringUtil::specialchars($GLOBALS['TL_LANG']['MSC']['showDifferences']);
 		$objTemplate->charset = System::getContainer()->getParameter('kernel.charset');

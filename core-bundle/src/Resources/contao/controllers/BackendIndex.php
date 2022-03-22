@@ -103,7 +103,7 @@ class BackendIndex extends Backend
 
 		$objTemplate->theme = Backend::getTheme();
 		$objTemplate->messages = Message::generate();
-		$objTemplate->base = Environment::get('base');
+		//$objTemplate->base = Environment::get('base');
 		$objTemplate->language = $GLOBALS['TL_LANGUAGE'];
 		$objTemplate->languages = System::getContainer()->get('contao.intl.locales')->getEnabledLocales(null, true); // backwards compatibility
 		$objTemplate->host = Backend::getDecodedHostname();
