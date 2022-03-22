@@ -230,7 +230,12 @@ abstract class Backend extends Controller
 		// Unset the "no back button" flag
 		$arrUnset[] = 'nb';
 
-		return parent::addToUrl($strRequest . ($strRequest ? '&amp;' : '') . 'rt=' . REQUEST_TOKEN, $blnAddRef, $arrUnset);
+		$url = parent::addToUrl($strRequest . ($strRequest ? '&amp;' : '') . 'rt=' . REQUEST_TOKEN, $blnAddRef, $arrUnset);
+
+		// Prepend the base path
+		$request = System::getContainer()->get('request_stack')->getMainRequest();
+
+		return $request->getBasePath() . '/' . $url;
 	}
 
 	/**
