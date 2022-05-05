@@ -12,6 +12,7 @@ namespace Contao;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\UsageTrackingTokenStorage;
 
 /**
  * Provide methods regarding calendars.
@@ -220,6 +221,15 @@ class Calendar extends Frontend
 		/** @var RequestStack $requestStack */
 		$requestStack = System::getContainer()->get('request_stack');
 		$currentRequest = $requestStack->getCurrentRequest();
+
+		// Disable session usage tracking
+		if (null === $currentRequest || !$currentRequest->hasSession()) {
+			$tokenStorage = System::getContainer()->get('security.token_storage');
+
+			if ($tokenStorage instanceof UsageTrackingTokenStorage) {
+				$tokenStorage->disableUsageTracking();
+			}
+		}
 
 		$origObjPage = $GLOBALS['objPage'] ?? null;
 

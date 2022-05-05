@@ -12,6 +12,7 @@ namespace Contao;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\UsageTrackingTokenStorage;
 
 /**
  * Provide methods regarding news archives.
@@ -152,6 +153,15 @@ class News extends Frontend
 			/** @var RequestStack $requestStack */
 			$requestStack = $container->get('request_stack');
 			$currentRequest = $requestStack->getCurrentRequest();
+
+			// Disable session usage tracking
+			if (null === $currentRequest || !$currentRequest->hasSession()) {
+				$tokenStorage = System::getContainer()->get('security.token_storage');
+
+				if ($tokenStorage instanceof UsageTrackingTokenStorage) {
+					$tokenStorage->disableUsageTracking();
+				}
+			}
 
 			$time = time();
 			$origObjPage = $GLOBALS['objPage'] ?? null;
