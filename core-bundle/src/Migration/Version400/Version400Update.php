@@ -62,8 +62,6 @@ class Version400Update extends AbstractMigration
                 id, addJQuery, jquery, addMooTools, mootools
             FROM
                 tl_layout
-            WHERE
-                framework != ''
         ");
 
         foreach ($layouts as $layout) {
@@ -140,8 +138,6 @@ class Version400Update extends AbstractMigration
                 id, mootools
             FROM
                 tl_layout
-            WHERE
-                framework != ''
         ");
 
         foreach ($layouts as $layout) {
