@@ -2,6 +2,13 @@
 
 ## Version 4.* to 5.0
 
+### News Feeds
+
+News Feeds are now implemented as page controllers. You may add new RSS, Atom and JSON feeds in the site structure back-end module.
+Feeds to not have to live under `share/` anymore but can be configured via page alias and nesting as any other page.
+
+The {{news_feed:id}} insert tag has been removed. You may use {{link_url::id}} instead.
+
 ### Contao 4 migrations
 
 Contao 5 does not include any Contao 4 migrations, so make sure to upgrade to Contao 4.13 before upgrading to Contao 5!
