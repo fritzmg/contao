@@ -158,7 +158,9 @@ class Ajax extends Backend
 	 */
 	public function executePostActions(DataContainer $dc)
 	{
-		header('Content-Type: text/html; charset=' . System::getContainer()->getParameter('kernel.charset'));
+		$response = (new Response('', 200, array('content-type' => 'text/html')))
+			->setCharset(System::getContainer()->getParameter('kernel.charset'))
+		;
 
 		// Bypass any core logic for non-core drivers (see #5957)
 		if (!$dc instanceof DC_File && !$dc instanceof DC_Folder && !$dc instanceof DC_Table)
@@ -172,11 +174,11 @@ class Ajax extends Backend
 		{
 			// Load nodes of the page structure tree
 			case 'loadStructure':
-				throw new ResponseException($this->convertToResponse($dc->ajaxTreeView($this->strAjaxId, (int) Input::post('level'))));
+				throw new ResponseException($response->setContent($dc->ajaxTreeView($this->strAjaxId, (int) Input::post('level'))));
 
 			// Load nodes of the file manager tree
 			case 'loadFileManager':
-				throw new ResponseException($this->convertToResponse($dc->ajaxTreeView(Input::post('folder', true), (int) Input::post('level'))));
+				throw new ResponseException($response->setContent($dc->ajaxTreeView(Input::post('folder', true), (int) Input::post('level'))));
 
 			// Reload the page/file picker
 			case 'reloadPagetree':
@@ -307,7 +309,7 @@ class Ajax extends Backend
 				/** @var FileTree|PageTree|Picker $objWidget */
 				$objWidget = new $strClass($strClass::getAttributesFromDca($GLOBALS['TL_DCA'][$dc->table]['fields'][$strField], $dc->inputName, $varValue, $strField, $dc->table, $dc));
 
-				throw new ResponseException($this->convertToResponse($objWidget->generate()));
+				throw new ResponseException($response->setContent($objWidget->generate()));
 
 			// Toggle subpalettes
 			case 'toggleSubpalette':
@@ -336,12 +338,12 @@ class Ajax extends Backend
 
 						if (Input::post('load'))
 						{
-							throw new ResponseException($this->convertToResponse($dc->editAll($this->strAjaxId, Input::post('id'))));
+							throw new ResponseException($response->setContent($dc->editAll($this->strAjaxId, Input::post('id'))));
 						}
 
 						if (($intLatestVersion = $objVersions->getLatestVersion()) !== null)
 						{
-							throw new ResponseException($this->convertToResponse('<input type="hidden" name="VERSION_NUMBER" value="' . $intLatestVersion . '">'));
+							throw new ResponseException($response->setContent('<input type="hidden" name="VERSION_NUMBER" value="' . $intLatestVersion . '">'));
 						}
 					}
 					else
@@ -355,12 +357,12 @@ class Ajax extends Backend
 
 						if (Input::post('load'))
 						{
-							throw new ResponseException($this->convertToResponse($dc->edit(false, Input::post('id'))));
+							throw new ResponseException($response->setContent($dc->edit(false, Input::post('id'))));
 						}
 
 						if (($intLatestVersion = $objVersions->getLatestVersion()) !== null)
 						{
-							throw new ResponseException($this->convertToResponse('<input type="hidden" name="VERSION_NUMBER" value="' . $intLatestVersion . '">'));
+							throw new ResponseException($response->setContent('<input type="hidden" name="VERSION_NUMBER" value="' . $intLatestVersion . '">'));
 						}
 					}
 				}
@@ -373,7 +375,7 @@ class Ajax extends Backend
 					{
 						Config::set(Input::post('field'), $val);
 
-						throw new ResponseException($this->convertToResponse($dc->edit(false, Input::post('id'))));
+						throw new ResponseException($response->setContent($dc->edit(false, Input::post('id'))));
 					}
 				}
 
@@ -419,6 +421,8 @@ class Ajax extends Backend
 	 */
 	protected function convertToResponse($str)
 	{
+		trigger_deprecation('contao/core-bundle', '5.0', 'Calling "%s()" has been deprecated and will no longer work in Contao 6.0. Use "new Response(…)" instead.', __METHOD__);
+
 		return new Response($str);
 	}
 }
