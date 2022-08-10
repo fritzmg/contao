@@ -745,8 +745,8 @@ abstract class Model
 	/**
 	 * Find a single record by its primary key
 	 *
-	 * @param mixed $varValue   The property value
-	 * @param array $arrOptions An optional options array
+	 * @param int|string|null $varValue   The property value
+	 * @param array           $arrOptions An optional options array
 	 *
 	 * @return static The model or null if the result is empty
 	 */
@@ -1041,6 +1041,13 @@ abstract class Model
 				if ($arrColumn[0] == static::$strPk || \in_array($arrColumn[0], static::getUniqueFields()))
 				{
 					$varKey = \is_array($arrOptions['value']) ? $arrOptions['value'][0] : $arrOptions['value'];
+
+					// Return early if column is unique and field value is null (#5033)
+					if ($varKey === null)
+					{
+						return null;
+					}
+
 					$objModel = Registry::getInstance()->fetch(static::$strTable, $varKey, $arrColumn[0]);
 
 					if ($objModel !== null)
