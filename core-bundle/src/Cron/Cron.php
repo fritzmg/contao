@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Contao\CoreBundle\Cron;
 
 use Contao\CoreBundle\Entity\CronJob as CronJobEntity;
+use Contao\CoreBundle\Exception\InvalidCronJobException;
 use Contao\CoreBundle\Repository\CronJobRepository;
 use Cron\CronExpression;
 use Doctrine\ORM\EntityManagerInterface;
@@ -72,7 +73,7 @@ class Cron
             }
         }
 
-        throw new \InvalidArgumentException(sprintf('Cronjob "%s" does not exist.', $name));
+        throw new InvalidCronJobException(sprintf('Cronjob "%s" does not exist.', $name));
     }
 
     /**

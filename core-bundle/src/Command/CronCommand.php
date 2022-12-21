@@ -13,12 +13,14 @@ declare(strict_types=1);
 namespace Contao\CoreBundle\Command;
 
 use Contao\CoreBundle\Cron\Cron;
+use Contao\CoreBundle\Exception\InvalidCronJobException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'contao:cron',
@@ -48,7 +50,14 @@ class CronCommand extends Command
         $force = $input->getOption('force');
 
         if ($cronJobName = $input->getArgument('cronjob')) {
-            $this->cron->runJob($cronJobName, Cron::SCOPE_CLI, $force);
+            try {
+                $this->cron->runJob($cronJobName, Cron::SCOPE_CLI, $force);
+            } catch (InvalidCronJobException $e) {
+                $sf = new SymfonyStyle($input, $output);
+                $sf->error($e->getMessage());
+
+                return Command::FAILURE;
+            }
         } else {
             $this->cron->run(Cron::SCOPE_CLI, $force);
         }
