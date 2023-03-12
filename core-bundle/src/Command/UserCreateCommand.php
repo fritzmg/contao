@@ -142,13 +142,13 @@ class UserCreateCommand extends Command
             $passwordCallback($input->getOption('password'));
         }
 
-        if (!$input->hasOption('group') && !$input->hasOption('admin')) {
+        if (false === $input->getOption('admin')) {
             $answer = $this->askChoice('Give user admin permissions?', ['no', 'yes'], $input, $output);
 
             $input->setOption('admin', 'yes' === $answer);
         }
 
-        if (!$input->hasOption('group') && !$input->hasOption('admin') && ($options = $this->getGroups()) && 0 !== \count($options)) {
+        if (false === $input->getOption('admin') && ($options = $this->getGroups()) && 0 !== \count($options)) {
             $answer = $this->askMultipleChoice(
                 'Assign which groups to the user (select multiple comma-separated)?',
                 $options,
