@@ -1,0 +1,46 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block toolbar %}
+    {% if collector.summary|default %}
+        {% set icon %}
+            {{ include('@ContaoCore/Collector/file-text.svg') }}
+            <span class="sf-toolbar-value">{{ collector.summary.name }}</span>
+        {% endset %}
+        {% set text %}
+            <div class="sf-toolbar-info-group">
+                <div class="sf-toolbar-info-piece">
+                    <b>Page ID</b>
+                    <span>{{ collector.summary.id }}</span>
+                </div>
+                <div class="sf-toolbar-info-piece">
+                    <b>Page name</b>
+                    <span>{{ collector.summary.name }}</span>
+                </div>
+                {% if collector.summary.title|default %}
+                    <div class="sf-toolbar-info-piece">
+                        <b>Page title</b>
+                        <span>{{ collector.summary.title }}</span>
+                    </div>
+                {% endif %}
+                <div class="sf-toolbar-info-piece">
+                    <b>Layout</b>
+                    <span>{{ collector.summary.layout|default('n/a') }}</span>
+                </div>
+            </div>
+            <div class="sf-toolbar-info-group">
+                <div class="sf-toolbar-info-piece">
+                    <span><a href="{{ collector.summary.editPage }}">Edit page ID {{ collector.summary.id }}</a></span>
+                </div>
+                <div class="sf-toolbar-info-piece">
+                    <span><a href="{{ collector.summary.editContent }}">Edit content for page ID {{ collector.summary.id }}</a></span>
+                </div>
+                {% if collector.summary.editLayout|default %}
+                    <div class="sf-toolbar-info-piece">
+                        <span><a href="{{ collector.summary.editLayout }}">Edit layout ID {{ collector.summary.layoutId }}</a></span>
+                    </div>
+                {% endif %}
+            </div>
+        {% endset %}
+        {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', { link: false, name: 'contao-page' }) }}
+    {% endif %}
+{% endblock %}
