@@ -21,11 +21,11 @@
 
     <{{ tag_name }}{% block headline_attributes %}{{ headline.attributes|default }}{% endblock %}>
     {%- block headline_inner -%}
-        {% if as_editor_view %}
+        {%- if as_editor_view -%}
             {{ headline.text }}
-        {% else %}
+        {%- else -%}
             {{ headline.text|insert_tag_raw }}
-        {% endif %}
+        {%- endif -%}
     {%- endblock -%}
     </{{ tag_name }}>
 {% endblock %}
