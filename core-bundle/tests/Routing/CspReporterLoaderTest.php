@@ -37,9 +37,18 @@ class CspReporterLoaderTest extends TestCase
         $this->assertSame([Request::METHOD_POST], $route->getMethods());
     }
 
+    public function testDoesNotAddRouteIfDisabled(): void
+    {
+        $loader = new CspReporterLoader(false, '/_contao/csp/report');
+
+        $route = $loader->load('.', 'contao_csp_reporter')->get('contao_csp_reporter');
+
+        $this->assertNull($route);
+    }
+
     public function testDoesNotAddRouteWithoutPath(): void
     {
-        $loader = new CspReporterLoader();
+        $loader = new CspReporterLoader(true, null);
 
         $route = $loader->load('.', 'contao_csp_reporter')->get('contao_csp_reporter');
 
