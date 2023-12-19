@@ -12,23 +12,23 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Tests\Twig\Runtime;
 
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContext;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Tests\TestCase;
-use Contao\CoreBundle\Twig\Runtime\ContentSecurityPolicyRuntime;
+use Contao\CoreBundle\Twig\Runtime\CspRuntime;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\DirectiveSet;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-class ContentSecurityPolicyRuntimeTest extends TestCase
+class CspRuntimeTest extends TestCase
 {
     public function testRetrievesNonceFromCspBuilder(): void
     {
         $directives = new DirectiveSet(new PolicyManager());
         $directives->setDirective('script-src', "'self'");
 
-        $cspHandler = new ContentSecurityPolicyHandler($directives);
+        $cspHandler = new CspHandler($directives);
 
         $responseContext = (new ResponseContext())->add($cspHandler);
 
@@ -39,7 +39,7 @@ class ContentSecurityPolicyRuntimeTest extends TestCase
             ->willReturn($responseContext)
         ;
 
-        $runtime = new ContentSecurityPolicyRuntime($responseContextAccessor, new RequestStack());
+        $runtime = new CspRuntime($responseContextAccessor, new RequestStack());
 
         $this->assertNotNull($runtime->getNonce('script-src'));
     }
@@ -49,7 +49,7 @@ class ContentSecurityPolicyRuntimeTest extends TestCase
         $directives = new DirectiveSet(new PolicyManager());
         $directives->setDirective('script-src', "'self'");
 
-        $cspHandler = new ContentSecurityPolicyHandler($directives);
+        $cspHandler = new CspHandler($directives);
 
         $responseContext = (new ResponseContext())->add($cspHandler);
 
@@ -60,7 +60,7 @@ class ContentSecurityPolicyRuntimeTest extends TestCase
             ->willReturn($responseContext)
         ;
 
-        $runtime = new ContentSecurityPolicyRuntime($responseContextAccessor, new RequestStack());
+        $runtime = new CspRuntime($responseContextAccessor, new RequestStack());
 
         $runtime->addSource('script-src', 'https://example.com/files/foo/foobar.js');
 

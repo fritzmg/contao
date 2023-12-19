@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Routing\ResponseContext;
 
-use Contao\CoreBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
+use Contao\CoreBundle\Csp\CspParser;
 use Contao\CoreBundle\InsertTag\InsertTagParser;
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
 use Contao\CoreBundle\Routing\ResponseContext\JsonLd\ContaoPageSchema;
 use Contao\CoreBundle\Routing\ResponseContext\JsonLd\JsonLdManager;
@@ -37,6 +37,7 @@ class CoreResponseContextFactory
         private readonly HtmlDecoder $htmlDecoder,
         private readonly RequestStack $requestStack,
         private readonly InsertTagParser $insertTagParser,
+        private readonly CspParser $cspParser,
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly bool $cspReportingEnabled = false,
     ) {
@@ -121,7 +122,7 @@ class CoreResponseContextFactory
         ;
 
         if ($pageModel->enableCsp) {
-            $directives = (new ContentSecurityPolicyParser())->parseHeader(trim((string) $pageModel->csp));
+            $directives = $this->cspParser->parseHeader(trim((string) $pageModel->csp));
             $directives->setLevel1Fallback((bool) $pageModel->cspLevel1Fallback);
 
             if ($this->cspReportingEnabled) {
@@ -140,7 +141,7 @@ class CoreResponseContextFactory
                 $urlContext->setBaseUrl($baseUrl);
             }
 
-            $cspHandler = new ContentSecurityPolicyHandler(
+            $cspHandler = new CspHandler(
                 $directives,
                 (bool) $pageModel->cspReportOnly,
                 (bool) $pageModel->cspLegacyHeader,

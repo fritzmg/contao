@@ -10,7 +10,7 @@
 
 namespace Contao;
 
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\JsonLd\JsonLdManager;
 use Contao\Image\ImageInterface;
 use Contao\Image\PictureConfiguration;
@@ -424,13 +424,13 @@ abstract class Template extends Controller
 	{
 		$responseContext = System::getContainer()->get('contao.routing.response_context_accessor')->getResponseContext();
 
-		if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class))
+		if (!$responseContext || !$responseContext->has(CspHandler::class))
 		{
 			return '';
 		}
 
-		/** @var ContentSecurityPolicyHandler $csp */
-		$csp = $responseContext->get(ContentSecurityPolicyHandler::class);
+		/** @var CspHandler $csp */
+		$csp = $responseContext->get(CspHandler::class);
 
 		return $csp->getNonce($directive);
 	}
@@ -442,7 +442,7 @@ abstract class Template extends Controller
 	{
 		$responseContext = System::getContainer()->get('contao.routing.response_context_accessor')->getResponseContext();
 
-		if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class))
+		if (!$responseContext || !$responseContext->has(CspHandler::class))
 		{
 			return;
 		}
@@ -463,8 +463,8 @@ abstract class Template extends Controller
 			}
 		}
 
-		/** @var ContentSecurityPolicyHandler $csp */
-		$csp = $responseContext->get(ContentSecurityPolicyHandler::class);
+		/** @var CspHandler $csp */
+		$csp = $responseContext->get(CspHandler::class);
 		$csp->addSource($directive, $source);
 	}
 

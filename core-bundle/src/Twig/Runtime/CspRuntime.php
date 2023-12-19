@@ -12,13 +12,13 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Twig\Runtime;
 
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Nyholm\Psr7\Uri;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Extension\RuntimeExtensionInterface;
 
-final class ContentSecurityPolicyRuntime implements RuntimeExtensionInterface
+final class CspRuntime implements RuntimeExtensionInterface
 {
     /**
      * @internal
@@ -33,12 +33,12 @@ final class ContentSecurityPolicyRuntime implements RuntimeExtensionInterface
     {
         $responseContext = $this->responseContextAccessor->getResponseContext();
 
-        if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class)) {
+        if (!$responseContext || !$responseContext->has(CspHandler::class)) {
             return '';
         }
 
-        /** @var ContentSecurityPolicyHandler $csp */
-        $csp = $responseContext->get(ContentSecurityPolicyHandler::class);
+        /** @var CspHandler $csp */
+        $csp = $responseContext->get(CspHandler::class);
 
         return $csp->getNonce($directive);
     }
@@ -47,7 +47,7 @@ final class ContentSecurityPolicyRuntime implements RuntimeExtensionInterface
     {
         $responseContext = $this->responseContextAccessor->getResponseContext();
 
-        if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class)) {
+        if (!$responseContext || !$responseContext->has(CspHandler::class)) {
             return;
         }
 
@@ -63,8 +63,8 @@ final class ContentSecurityPolicyRuntime implements RuntimeExtensionInterface
             }
         }
 
-        /** @var ContentSecurityPolicyHandler $csp */
-        $csp = $responseContext->get(ContentSecurityPolicyHandler::class);
+        /** @var CspHandler $csp */
+        $csp = $responseContext->get(CspHandler::class);
         $csp->addSource($directive, $source);
     }
 }

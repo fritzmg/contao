@@ -18,7 +18,7 @@ use Contao\CoreBundle\Csrf\ContaoCsrfTokenManager;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Image\Studio\FigureRenderer;
 use Contao\CoreBundle\InsertTag\InsertTagParser;
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContext;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Tests\TestCase;
@@ -430,7 +430,7 @@ class TemplateTest extends TestCase
         $directives = new DirectiveSet(new PolicyManager());
         $directives->setDirective('script-src', "'self'");
 
-        $cspHandler = new ContentSecurityPolicyHandler($directives);
+        $cspHandler = new CspHandler($directives);
 
         $responseContext = (new ResponseContext())->add($cspHandler);
 
@@ -451,7 +451,7 @@ class TemplateTest extends TestCase
         $directives = new DirectiveSet(new PolicyManager());
         $directives->setDirective('script-src', "'self'");
 
-        $cspHandler = new ContentSecurityPolicyHandler($directives);
+        $cspHandler = new CspHandler($directives);
 
         $responseContext = (new ResponseContext())->add($cspHandler);
 

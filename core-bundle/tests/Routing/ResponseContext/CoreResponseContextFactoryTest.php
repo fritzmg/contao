@@ -12,10 +12,11 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Tests\Routing\ResponseContext;
 
+use Contao\CoreBundle\Csp\CspParser;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\InsertTag\InsertTagParser;
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
 use Contao\CoreBundle\Routing\ResponseContext\CoreResponseContextFactory;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
 use Contao\CoreBundle\Routing\ResponseContext\JsonLd\ContaoPageSchema;
 use Contao\CoreBundle\Routing\ResponseContext\JsonLd\JsonLdManager;
@@ -25,6 +26,8 @@ use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\Tests\TestCase;
 use Contao\PageModel;
 use Contao\System;
+use Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
+use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -57,6 +60,7 @@ class CoreResponseContextFactoryTest extends TestCase
             new HtmlDecoder($this->createMock(InsertTagParser::class)),
             $this->createMock(RequestStack::class),
             $this->createMock(InsertTagParser::class),
+            $this->createMock(CspParser::class),
             $this->createMock(UrlGeneratorInterface::class),
         );
 
@@ -80,6 +84,7 @@ class CoreResponseContextFactoryTest extends TestCase
             new HtmlDecoder($this->createMock(InsertTagParser::class)),
             $this->createMock(RequestStack::class),
             $this->createMock(InsertTagParser::class),
+            $this->createMock(CspParser::class),
             $this->createMock(UrlGeneratorInterface::class),
         );
 
@@ -125,6 +130,8 @@ class CoreResponseContextFactoryTest extends TestCase
         $requestStack = new RequestStack();
         $requestStack->push(Request::create('https://example.com/'));
 
+        $cspParser = new CspParser(new PolicyManager(), new ContentSecurityPolicyParser());
+
         $urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $urlGenerator
             ->expects($this->once())
@@ -154,6 +161,7 @@ class CoreResponseContextFactoryTest extends TestCase
             new HtmlDecoder($insertTagsParser),
             $requestStack,
             $insertTagsParser,
+            $cspParser,
             $urlGenerator,
             true,
         );
@@ -186,9 +194,9 @@ class CoreResponseContextFactoryTest extends TestCase
             $jsonLdManager->getGraphForSchema(JsonLdManager::SCHEMA_CONTAO)->get(ContaoPageSchema::class)->toArray(),
         );
 
-        $directives = $responseContext->get(ContentSecurityPolicyHandler::class)->getDirectives();
+        $directives = $responseContext->get(CspHandler::class)->getDirectives();
 
-        $this->assertInstanceOf(ContentSecurityPolicyHandler::class, $responseContext->get(ContentSecurityPolicyHandler::class));
+        $this->assertInstanceOf(CspHandler::class, $responseContext->get(CspHandler::class));
         $this->assertSame("'self'", $directives->getDirective('script-src'));
         $this->assertSame('https://example.com/csp/report', $directives->getDirective('report-uri'));
     }
@@ -228,6 +236,7 @@ class CoreResponseContextFactoryTest extends TestCase
             new HtmlDecoder($insertTagsParser),
             $requestStack,
             $insertTagsParser,
+            $this->createMock(CspParser::class),
             $this->createMock(UrlGeneratorInterface::class),
         );
 
@@ -273,6 +282,7 @@ class CoreResponseContextFactoryTest extends TestCase
             new HtmlDecoder($insertTagsParser),
             $this->createMock(RequestStack::class),
             $insertTagsParser,
+            $this->createMock(CspParser::class),
             $this->createMock(UrlGeneratorInterface::class),
         );
 

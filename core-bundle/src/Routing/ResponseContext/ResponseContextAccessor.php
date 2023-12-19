@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Routing\ResponseContext;
 
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -61,9 +61,9 @@ class ResponseContextAccessor
             $response->headers->set($name, $values, false); // Do not replace but add
         }
 
-        if ($responseContext->has(ContentSecurityPolicyHandler::class)) {
-            /** @var ContentSecurityPolicyHandler $csp */
-            $csp = $responseContext->get(ContentSecurityPolicyHandler::class);
+        if ($responseContext->has(CspHandler::class)) {
+            /** @var CspHandler $csp */
+            $csp = $responseContext->get(CspHandler::class);
             $csp->applyHeaders($response, $this->requestStack->getCurrentRequest());
         }
 

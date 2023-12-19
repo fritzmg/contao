@@ -12,10 +12,12 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Tests\Routing\ResponseContext;
 
-use Contao\CoreBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
-use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
+use Contao\CoreBundle\Csp\CspParser;
+use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContext;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
+use Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
+use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -49,8 +51,9 @@ class ResponseContextAccessorTest extends TestCase
         $responseContext = new ResponseContext();
         $responseContext->getHeaderBag()->set('Foo', 'Bar');
 
-        $directives = (new ContentSecurityPolicyParser())->parseHeader("script-src 'self'");
-        $responseContext->add(new ContentSecurityPolicyHandler($directives));
+        $cspParser = new CspParser(new PolicyManager(), new ContentSecurityPolicyParser());
+        $directives = $cspParser->parseHeader("script-src 'self'");
+        $responseContext->add(new CspHandler($directives));
 
         $accessor->setResponseContext($responseContext);
 

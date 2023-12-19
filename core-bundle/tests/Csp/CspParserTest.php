@@ -10,19 +10,21 @@ declare(strict_types=1);
  * @license LGPL-3.0-or-later
  */
 
-namespace Contao\CoreBundle\Tests\Cors;
+namespace Contao\CoreBundle\Tests\Csp;
 
-use Contao\CoreBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
+use Contao\CoreBundle\Csp\CspParser;
+use Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
+use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use PHPUnit\Framework\TestCase;
 
-class ContentSecurityPolicyParserTest extends TestCase
+class CspParserTest extends TestCase
 {
     /**
      * @dataProvider directivesProvider
      */
-    public function testParsesContentSecurityPolicyHeader(string $header, array $result): void
+    public function testParsesCspHeader(string $header, array $result): void
     {
-        $cspParser = new ContentSecurityPolicyParser();
+        $cspParser = new CspParser(new PolicyManager(), new ContentSecurityPolicyParser());
         $directiveSet = $cspParser->parseHeader($header);
 
         foreach ($result as $name => $value) {

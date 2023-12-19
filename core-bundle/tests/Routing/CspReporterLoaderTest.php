@@ -20,14 +20,14 @@ class CspReporterLoaderTest extends TestCase
 {
     public function testSupportsTheContaoCspReporterRoute(): void
     {
-        $loader = new CspReporterLoader('/_contao/csp/report');
+        $loader = new CspReporterLoader(true, '/_contao/csp/report');
 
         $this->assertTrue($loader->supports('.', 'contao_csp_reporter'));
     }
 
     public function testUsesTheCorrectPath(): void
     {
-        $loader = new CspReporterLoader('/_contao/csp/report');
+        $loader = new CspReporterLoader(true, '/_contao/csp/report');
 
         $route = $loader->load('.', 'contao_csp_reporter')->get('contao_csp_reporter');
 

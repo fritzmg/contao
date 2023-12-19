@@ -10,14 +10,14 @@ declare(strict_types=1);
  * @license LGPL-3.0-or-later
  */
 
-namespace Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy;
+namespace Contao\CoreBundle\Routing\ResponseContext\Csp;
 
 use Nelmio\SecurityBundle\ContentSecurityPolicy\DirectiveSet;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-final class ContentSecurityPolicyHandler
+final class CspHandler
 {
     private string|null $nonce = null;
 
@@ -25,9 +25,9 @@ final class ContentSecurityPolicyHandler
 
     private array $signatures = [];
 
-    private static $validNonceDirectives = ['script-src', 'style-src', 'script-src-elem', 'style-src-elem'];
+    private static array $validNonceDirectives = ['script-src', 'style-src', 'script-src-elem', 'style-src-elem'];
 
-    private static $validHashDirectives = ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'];
+    private static array $validHashDirectives = ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'];
 
     public function __construct(
         private DirectiveSet|null $directives = null,
