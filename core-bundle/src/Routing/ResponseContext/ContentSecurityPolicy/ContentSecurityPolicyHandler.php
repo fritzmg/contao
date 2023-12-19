@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy;
 
 use Nelmio\SecurityBundle\ContentSecurityPolicy\DirectiveSet;
+use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -29,10 +30,13 @@ final class ContentSecurityPolicyHandler
     private static $validHashDirectives = ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'];
 
     public function __construct(
-        private readonly DirectiveSet $directives,
+        private DirectiveSet|null $directives = null,
         private bool $reportOnly = false,
         private bool $useLegacyHeaders = false,
     ) {
+        if (!$directives) {
+            $this->directives = new DirectiveSet(new PolicyManager());
+        }
     }
 
     public function setDirectives(DirectiveSet $directives): self
