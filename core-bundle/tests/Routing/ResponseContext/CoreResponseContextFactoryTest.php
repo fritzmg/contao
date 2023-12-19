@@ -26,7 +26,6 @@ use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\Tests\TestCase;
 use Contao\PageModel;
 use Contao\System;
-use Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -130,7 +129,7 @@ class CoreResponseContextFactoryTest extends TestCase
         $requestStack = new RequestStack();
         $requestStack->push(Request::create('https://example.com/'));
 
-        $cspParser = new CspParser(new PolicyManager(), new ContentSecurityPolicyParser());
+        $cspParser = new CspParser(new PolicyManager());
 
         $urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $urlGenerator

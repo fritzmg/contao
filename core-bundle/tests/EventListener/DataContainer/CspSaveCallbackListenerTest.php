@@ -15,7 +15,6 @@ namespace Contao\CoreBundle\Tests\EventListener\DataContainer;
 use Contao\CoreBundle\Csp\CspParser;
 use Contao\CoreBundle\EventListener\DataContainer\CspSaveCallbackListener;
 use Contao\CoreBundle\Tests\TestCase;
-use Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -31,7 +30,7 @@ class CspSaveCallbackListenerTest extends TestCase
             ->willReturn('Invalid Content Security Policy given: Unknown CSP directive name: foobar.')
         ;
 
-        $cspParser = new CspParser(new PolicyManager(), new ContentSecurityPolicyParser());
+        $cspParser = new CspParser(new PolicyManager());
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invalid Content Security Policy given: Unknown CSP directive name: foobar.');

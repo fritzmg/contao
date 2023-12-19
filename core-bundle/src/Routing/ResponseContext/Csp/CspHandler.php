@@ -12,8 +12,8 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Routing\ResponseContext\Csp;
 
+use Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\DirectiveSet;
-use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,13 +30,10 @@ final class CspHandler
     private static array $validHashDirectives = ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'];
 
     public function __construct(
-        private DirectiveSet|null $directives = null,
+        private DirectiveSet $directives,
         private bool $reportOnly = false,
         private bool $useLegacyHeaders = false,
     ) {
-        if (!$directives) {
-            $this->directives = new DirectiveSet(new PolicyManager());
-        }
     }
 
     public function setDirectives(DirectiveSet $directives): self
@@ -94,21 +91,21 @@ final class CspHandler
         return $this->nonce;
     }
 
-    public function getHash(string $directive, string $script, string $algorithm = 'sha384'): string|null
+    public function addHash(string $directive, string $script, string $algorithm = 'sha384'): self
     {
         if (!\in_array($directive, self::$validHashDirectives, true)) {
             throw new \InvalidArgumentException('Invalid directive');
         }
 
         if (!$this->isDirectiveSet($directive)) {
-            return null;
+            return $this;
         }
 
         $hash = base64_encode(hash($algorithm, $script, true));
 
         $this->signatures[$directive][] = $algorithm.'-'.$hash;
 
-        return $hash;
+        return $this;
     }
 
     /**
@@ -121,8 +118,12 @@ final class CspHandler
     public function addSource(string $directive, string $source, bool $autoIgnore = true): self
     {
         if ($this->isDirectiveSet($directive, true) || !$autoIgnore) {
-            $current = $this->directives->getDirective($directive);
-            $this->directives->setDirective($directive, trim($current.' '.$source));
+            $parser = new ContentSecurityPolicyParser();
+            $existingValues = explode(' ', (string) $this->directives->getDirective($directive));
+            $newValues = array_unique(array_merge($existingValues, explode(' ', $source)));
+            $value = $parser->parseSourceList($newValues);
+
+            $this->directives->setDirective($directive, $value);
         }
 
         return $this;
@@ -147,7 +148,7 @@ final class CspHandler
         return match ($directive) {
             'script-src-attr', 'script-src-elem' => $this->isDirectiveSet('script-src', $includeFallback),
             'style-src-attr', 'style-src-elem' => $this->isDirectiveSet('style-src', $includeFallback),
-            default => $this->isDirectiveSet('default-src', $includeFallback),
+            default => $this->isDirectiveSet('default-src', false),
         };
     }
 

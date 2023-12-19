@@ -14,8 +14,6 @@ namespace Contao\CoreBundle\Twig\Runtime;
 
 use Contao\CoreBundle\Routing\ResponseContext\Csp\CspHandler;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
-use Nyholm\Psr7\Uri;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Extension\RuntimeExtensionInterface;
 
 final class CspRuntime implements RuntimeExtensionInterface
@@ -23,10 +21,8 @@ final class CspRuntime implements RuntimeExtensionInterface
     /**
      * @internal
      */
-    public function __construct(
-        private readonly ResponseContextAccessor $responseContextAccessor,
-        private readonly RequestStack $requestStack,
-    ) {
+    public function __construct(private readonly ResponseContextAccessor $responseContextAccessor)
+    {
     }
 
     public function getNonce(string $directive): string|null
@@ -49,18 +45,6 @@ final class CspRuntime implements RuntimeExtensionInterface
 
         if (!$responseContext || !$responseContext->has(CspHandler::class)) {
             return;
-        }
-
-        // Automatically add the scheme and host
-        if ($request = $this->requestStack->getCurrentRequest()) {
-            $uri = new Uri($source);
-
-            if (!$uri->getHost()) {
-                $source = (string) $uri
-                    ->withScheme($request->getScheme())
-                    ->withHost($request->getHost())
-                ;
-            }
         }
 
         /** @var CspHandler $csp */

@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace Contao\CoreBundle\Tests\Csp;
 
 use Contao\CoreBundle\Csp\CspParser;
-use Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use PHPUnit\Framework\TestCase;
 
@@ -24,7 +23,7 @@ class CspParserTest extends TestCase
      */
     public function testParsesCspHeader(string $header, array $result): void
     {
-        $cspParser = new CspParser(new PolicyManager(), new ContentSecurityPolicyParser());
+        $cspParser = new CspParser(new PolicyManager());
         $directiveSet = $cspParser->parseHeader($header);
 
         foreach ($result as $name => $value) {

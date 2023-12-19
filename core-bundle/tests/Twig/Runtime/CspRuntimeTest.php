@@ -19,7 +19,6 @@ use Contao\CoreBundle\Tests\TestCase;
 use Contao\CoreBundle\Twig\Runtime\CspRuntime;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\DirectiveSet;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 class CspRuntimeTest extends TestCase
 {
@@ -39,7 +38,7 @@ class CspRuntimeTest extends TestCase
             ->willReturn($responseContext)
         ;
 
-        $runtime = new CspRuntime($responseContextAccessor, new RequestStack());
+        $runtime = new CspRuntime($responseContextAccessor);
 
         $this->assertNotNull($runtime->getNonce('script-src'));
     }
@@ -60,7 +59,7 @@ class CspRuntimeTest extends TestCase
             ->willReturn($responseContext)
         ;
 
-        $runtime = new CspRuntime($responseContextAccessor, new RequestStack());
+        $runtime = new CspRuntime($responseContextAccessor);
 
         $runtime->addSource('script-src', 'https://example.com/files/foo/foobar.js');
 

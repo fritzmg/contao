@@ -131,15 +131,11 @@ services:
             - '@filesystem'
             - '%kernel.project_dir%'
             - '@monolog.logger.contao.cron'
-    
-    contao.csp.nelmio_csp_parser:
-        class: Nelmio\SecurityBundle\ContentSecurityPolicy\ContentSecurityPolicyParser
 
     contao.csp.parser:
         class: Contao\CoreBundle\Csp\CspParser
         arguments:
             - '@contao.csp.policy_manager'
-            - '@contao.csp.nelmio_csp_parser'
 
     contao.csp.policy_manager:
         class: Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager
@@ -1076,7 +1072,6 @@ services:
         class: Contao\CoreBundle\Twig\Runtime\CspRuntime
         arguments:
             - '@contao.routing.response_context_accessor'
-            - '@request_stack'
 
     contao.twig.extension:
         class: Contao\CoreBundle\Twig\Extension\ContaoExtension

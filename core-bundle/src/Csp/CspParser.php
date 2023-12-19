@@ -18,14 +18,13 @@ use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 
 class CspParser
 {
-    public function __construct(
-        private readonly PolicyManager $policyManager,
-        private readonly ContentSecurityPolicyParser $policyParser,
-    ) {
+    public function __construct(private readonly PolicyManager $policyManager)
+    {
     }
 
     public function parseHeader(string $header): DirectiveSet
     {
+        $parser = new ContentSecurityPolicyParser();
         $directiveSet = new DirectiveSet($this->policyManager);
         $names = $directiveSet->getNames();
 
@@ -38,14 +37,9 @@ class CspParser
                 $value = true;
             }
 
-            $directiveSet->setDirective($name, $this->parseSourceList((string) $value));
+            $directiveSet->setDirective($name, $parser->parseSourceList(explode(' ', (string) $value)));
         }
 
         return $directiveSet;
-    }
-
-    public function parseSourceList(string $values): string
-    {
-        return $this->policyParser->parseSourceList(explode(' ', $values));
     }
 }
