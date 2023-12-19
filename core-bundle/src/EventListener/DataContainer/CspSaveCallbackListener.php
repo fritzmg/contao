@@ -12,8 +12,8 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\EventListener\DataContainer;
 
+use Contao\CoreBundle\ContentSecurityPolicy\ContentSecurityPolicyParser;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
-use ParagonIE\CSPBuilder\CSPBuilder;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCallback('tl_page', 'fields.csp.save')]
@@ -26,8 +26,8 @@ class CspSaveCallbackListener
     public function __invoke(mixed $value): mixed
     {
         try {
-            CSPBuilder::fromHeader(trim((string) $value));
-        } catch (\Throwable $e) {
+            (new ContentSecurityPolicyParser())->parseHeader(trim((string) $value));
+        } catch (\InvalidArgumentException $e) {
             throw new \RuntimeException($this->translator->trans('ERR.invalidCsp', [$e->getMessage()], 'contao_default'), 0, $e);
         }
 

@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Routing\ResponseContext;
 
-use ParagonIE\CSPBuilder\CSPBuilder;
+use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -61,18 +61,10 @@ class ResponseContextAccessor
             $response->headers->set($name, $values, false); // Do not replace but add
         }
 
-        if ($responseContext->has(CSPBuilder::class) && $responseContext->isInitialized(CSPBuilder::class)) {
-            /** @var CSPBuilder $csp */
-            $csp = $responseContext->get(CSPBuilder::class);
-
-            foreach ($csp->getRequireHeaders() as $header) {
-                [$name, $value] = $header;
-                $response->headers->set($name, $value, false);
-            }
-
-            foreach ($csp->getHeaderArray(false) as $name => $value) {
-                $response->headers->set($name, $value, false);
-            }
+        if ($responseContext->has(ContentSecurityPolicyHandler::class)) {
+            /** @var ContentSecurityPolicyHandler $csp */
+            $csp = $responseContext->get(ContentSecurityPolicyHandler::class);
+            $csp->applyHeaders($response, $this->requestStack->getCurrentRequest());
         }
 
         $this->endCurrentContext();

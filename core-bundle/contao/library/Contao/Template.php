@@ -10,13 +10,13 @@
 
 namespace Contao;
 
+use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
 use Contao\CoreBundle\Routing\ResponseContext\JsonLd\JsonLdManager;
 use Contao\Image\ImageInterface;
 use Contao\Image\PictureConfiguration;
 use MatthiasMullie\Minify\CSS;
 use MatthiasMullie\Minify\JS;
 use Nyholm\Psr7\Uri;
-use ParagonIE\CSPBuilder\CSPBuilder;
 use Spatie\SchemaOrg\Graph;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\VarDumper\VarDumper;
@@ -420,19 +420,19 @@ abstract class Template extends Controller
 	/**
 	 * Returns a nonce for the given CSP directive.
 	 */
-	public function nonce(string $directive): string
+	public function nonce(string $directive): ?string
 	{
 		$responseContext = System::getContainer()->get('contao.routing.response_context_accessor')->getResponseContext();
 
-		if (!$responseContext || !$responseContext->has(CSPBuilder::class))
+		if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class))
 		{
 			return '';
 		}
 
-		/** @var CSPBuilder $csp */
-		$csp = $responseContext->get(CSPBuilder::class);
+		/** @var ContentSecurityPolicyHandler $csp */
+		$csp = $responseContext->get(ContentSecurityPolicyHandler::class);
 
-		return $csp->nonce($directive);
+		return $csp->getNonce($directive);
 	}
 
 	/**
@@ -442,7 +442,7 @@ abstract class Template extends Controller
 	{
 		$responseContext = System::getContainer()->get('contao.routing.response_context_accessor')->getResponseContext();
 
-		if (!$responseContext || !$responseContext->has(CSPBuilder::class))
+		if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class))
 		{
 			return;
 		}
@@ -463,8 +463,8 @@ abstract class Template extends Controller
 			}
 		}
 
-		/** @var CSPBuilder $csp */
-		$csp = $responseContext->get(CSPBuilder::class);
+		/** @var ContentSecurityPolicyHandler $csp */
+		$csp = $responseContext->get(ContentSecurityPolicyHandler::class);
 		$csp->addSource($directive, $source);
 	}
 

@@ -1056,7 +1056,7 @@ services:
             - '@contao.resource_finder'
 
     contao.twig.csp_runtime:
-        class: Contao\CoreBundle\Twig\Runtime\CspRuntime
+        class: Contao\CoreBundle\Twig\Runtime\ContentSecurityPolicyRuntime
         arguments:
             - '@contao.routing.response_context_accessor'
             - '@request_stack'

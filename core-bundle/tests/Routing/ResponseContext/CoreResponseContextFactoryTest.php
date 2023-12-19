@@ -14,6 +14,7 @@ namespace Contao\CoreBundle\Tests\Routing\ResponseContext;
 
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\InsertTag\InsertTagParser;
+use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
 use Contao\CoreBundle\Routing\ResponseContext\CoreResponseContextFactory;
 use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
 use Contao\CoreBundle\Routing\ResponseContext\JsonLd\ContaoPageSchema;
@@ -24,7 +25,6 @@ use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\Tests\TestCase;
 use Contao\PageModel;
 use Contao\System;
-use ParagonIE\CSPBuilder\CSPBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -186,8 +186,11 @@ class CoreResponseContextFactoryTest extends TestCase
             $jsonLdManager->getGraphForSchema(JsonLdManager::SCHEMA_CONTAO)->get(ContaoPageSchema::class)->toArray(),
         );
 
-        $this->assertInstanceOf(CSPBuilder::class, $responseContext->get(CSPBuilder::class));
-        $this->assertSame(['Content-Security-Policy' => "script-src 'self'; report-uri https://example.com/csp/report"], $responseContext->get(CSPBuilder::class)->getHeaderArray(false));
+        $directives = $responseContext->get(ContentSecurityPolicyHandler::class)->getDirectives();
+
+        $this->assertInstanceOf(ContentSecurityPolicyHandler::class, $responseContext->get(ContentSecurityPolicyHandler::class));
+        $this->assertSame("'self'", $directives->getDirective('script-src'));
+        $this->assertSame('https://example.com/csp/report', $directives->getDirective('report-uri'));
     }
 
     /**

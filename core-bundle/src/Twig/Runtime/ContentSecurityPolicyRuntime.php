@@ -12,13 +12,13 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Twig\Runtime;
 
+use Contao\CoreBundle\Routing\ResponseContext\ContentSecurityPolicy\ContentSecurityPolicyHandler;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Nyholm\Psr7\Uri;
-use ParagonIE\CSPBuilder\CSPBuilder;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Extension\RuntimeExtensionInterface;
 
-final class CspRuntime implements RuntimeExtensionInterface
+final class ContentSecurityPolicyRuntime implements RuntimeExtensionInterface
 {
     /**
      * @internal
@@ -29,25 +29,25 @@ final class CspRuntime implements RuntimeExtensionInterface
     ) {
     }
 
-    public function getNonce(string $directive): string
+    public function getNonce(string $directive): string|null
     {
         $responseContext = $this->responseContextAccessor->getResponseContext();
 
-        if (!$responseContext || !$responseContext->has(CSPBuilder::class)) {
+        if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class)) {
             return '';
         }
 
-        /** @var CSPBuilder $csp */
-        $csp = $responseContext->get(CSPBuilder::class);
+        /** @var ContentSecurityPolicyHandler $csp */
+        $csp = $responseContext->get(ContentSecurityPolicyHandler::class);
 
-        return $csp->nonce($directive);
+        return $csp->getNonce($directive);
     }
 
     public function addSource(string $directive, string $source): void
     {
         $responseContext = $this->responseContextAccessor->getResponseContext();
 
-        if (!$responseContext || !$responseContext->has(CSPBuilder::class)) {
+        if (!$responseContext || !$responseContext->has(ContentSecurityPolicyHandler::class)) {
             return;
         }
 
@@ -63,8 +63,8 @@ final class CspRuntime implements RuntimeExtensionInterface
             }
         }
 
-        /** @var CSPBuilder $csp */
-        $csp = $responseContext->get(CSPBuilder::class);
+        /** @var ContentSecurityPolicyHandler $csp */
+        $csp = $responseContext->get(ContentSecurityPolicyHandler::class);
         $csp->addSource($directive, $source);
     }
 }

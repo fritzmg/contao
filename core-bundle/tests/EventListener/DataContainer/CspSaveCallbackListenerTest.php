@@ -24,12 +24,12 @@ class CspSaveCallbackListenerTest extends TestCase
         $translator
             ->expects($this->once())
             ->method('trans')
-            ->with('ERR.invalidCsp', ['Directive foobar does not exist'], 'contao_default')
-            ->willReturn('Invalid Content Security Policy given: Directive "foobar" does not exist.')
+            ->with('ERR.invalidCsp', ['Unknown CSP directive name: foobar'], 'contao_default')
+            ->willReturn('Invalid Content Security Policy given: Unknown CSP directive name: foobar.')
         ;
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Invalid Content Security Policy given: Directive "foobar" does not exist.');
+        $this->expectExceptionMessage('Invalid Content Security Policy given: Unknown CSP directive name: foobar.');
 
         (new CspSaveCallbackListener($translator))("foobar 'self'");
     }
