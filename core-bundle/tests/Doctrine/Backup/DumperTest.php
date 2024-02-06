@@ -68,7 +68,7 @@ class DumperTest extends ContaoTestCase
     public function successfulDumpProvider(): \Generator
     {
         yield 'Empty table without data' => [
-            [new Table('tl_page', [new Column('foobar', Type::getType(Types::STRING), ['length' => 255])])],
+            [new Table('tl_page', [new Column('foobar', Type::getType(Types::STRING), ['length' => 255])], [], [], [], ['charset' => 'utf8', 'collation' => 'utf8_unicode_ci', 'engine' => 'InnoDB'])],
             [],
             [
                 'SELECT `foobar` AS `foobar` FROM `tl_page`' => [],
