@@ -77,7 +77,7 @@ class DumperTest extends ContaoTestCase
                 'SET FOREIGN_KEY_CHECKS = 0;',
                 '-- BEGIN STRUCTURE tl_page',
                 'DROP TABLE IF EXISTS `tl_page`;',
-                'CREATE TABLE `tl_page` (`foobar` VARCHAR(255) NOT NULL);',
+                'CREATE TABLE `tl_page` (`foobar` VARCHAR(255) NOT NULL) DEFAULT CHARACTER SET utf8 COLLATE `utf8_unicode_ci` ENGINE = InnoDB;',
                 '-- BEGIN DATA tl_page',
                 'SET FOREIGN_KEY_CHECKS = 1;',
             ],
