@@ -126,6 +126,11 @@ services:
             - '@contao.framework'
             - '@contao.resource_finder'
 
+    contao.migration.version_413.cron_job_name:
+        class: Contao\CoreBundle\Migration\Version413\CronJobNameMigration
+        arguments:
+            - '@database_connection'
+
     contao.migration.version_413.file_extension:
         class: Contao\CoreBundle\Migration\Version413\FileExtensionMigration
         arguments:
