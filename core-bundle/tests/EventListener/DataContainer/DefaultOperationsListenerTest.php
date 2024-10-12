@@ -562,7 +562,7 @@ class DefaultOperationsListenerTest extends TestCase
         $operation['button_callback']($config);
     }
 
-    public function checkPermissionsProvider(): \Generator
+    public static function checkPermissionsProvider(): iterable
     {
         yield 'edit operation' => [
             'edit',
@@ -652,8 +652,9 @@ class DefaultOperationsListenerTest extends TestCase
 
             $this->assertSame(1, $ref->getNumberOfParameters());
 
-            /** @var \ReflectionNamedType $type */
             $type = $ref->getParameters()[0]->getType();
+
+            $this->assertInstanceOf(\ReflectionNamedType::class, $type);
             $this->assertSame(DataContainerOperation::class, $type->getName());
         } else {
             $this->assertArrayNotHasKey('button_callback', $operation);

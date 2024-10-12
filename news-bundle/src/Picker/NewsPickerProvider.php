@@ -79,7 +79,7 @@ class NewsPickerProvider extends AbstractInsertTagPickerProvider implements DcaP
 
     public function convertDcaValue(PickerConfig $config, mixed $value): string
     {
-        return sprintf($this->getInsertTag($config), $value);
+        return \sprintf($this->getInsertTag($config), $value);
     }
 
     protected function getRouteParameters(PickerConfig|null $config = null): array
@@ -106,15 +106,12 @@ class NewsPickerProvider extends AbstractInsertTagPickerProvider implements DcaP
     private function getNewsArchiveId(int|string $id): int|null
     {
         $newsAdapter = $this->framework->getAdapter(NewsModel::class);
-        $newsModel = $newsAdapter->findById($id);
 
-        if (!$newsModel instanceof NewsModel) {
+        if (!$newsModel = $newsAdapter->findById($id)) {
             return null;
         }
 
-        $newsArchive = $newsModel->getRelated('pid');
-
-        if (!$newsArchive instanceof NewsArchiveModel) {
+        if (!$newsArchive = $this->framework->getAdapter(NewsArchiveModel::class)->findById($newsModel->pid)) {
             return null;
         }
 

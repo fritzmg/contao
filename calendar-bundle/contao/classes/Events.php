@@ -191,7 +191,6 @@ abstract class Events extends Module
 	 */
 	protected function addEvent($objEvents, $intStart, $intEnd, $intBegin, $intLimit, $intCalendar)
 	{
-		/** @var PageModel $objPage */
 		global $objPage;
 
 		$intDate = $intStart;
@@ -241,25 +240,25 @@ abstract class Events extends Module
 				}
 				else
 				{
-					$repeat = sprintf($GLOBALS['TL_LANG']['MSC']['cal_multiple_' . $arrRange['unit']], $arrRange['value']);
+					$repeat = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_multiple_' . $arrRange['unit']], $arrRange['value']);
 				}
 
 				if ($objEvents->recurrences > 0)
 				{
-					$until = ' ' . sprintf($GLOBALS['TL_LANG']['MSC']['cal_until'], Date::parse($objPage->dateFormat, $objEvents->repeatEnd));
+					$until = ' ' . \sprintf($GLOBALS['TL_LANG']['MSC']['cal_until'], Date::parse($objPage->dateFormat, $objEvents->repeatEnd));
 				}
 
 				if ($objEvents->recurrences > 0 && $intEnd < time())
 				{
-					$recurring = sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat_ended'], $repeat, $until);
+					$recurring = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat_ended'], $repeat, $until);
 				}
 				elseif ($objEvents->addTime)
 				{
-					$recurring = sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d\TH:i:sP', $intStart), $strDate . ($strTime ? ' ' . $strTime : ''));
+					$recurring = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d\TH:i:sP', $intStart), $strDate . ($strTime ? ' ' . $strTime : ''));
 				}
 				else
 				{
-					$recurring = sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d', $intStart), $strDate);
+					$recurring = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d', $intStart), $strDate);
 				}
 			}
 		}
@@ -274,6 +273,15 @@ abstract class Events extends Module
 		// Store raw data
 		$arrEvent = $objEvents->row();
 
+		try
+		{
+			$url = System::getContainer()->get('contao.routing.content_url_generator')->generate($objEvents);
+		}
+		catch (ExceptionInterface)
+		{
+			$url = null;
+		}
+
 		// Overwrite some settings
 		$arrEvent['date'] = $strDate;
 		$arrEvent['time'] = $strTime;
@@ -281,11 +289,11 @@ abstract class Events extends Module
 		$arrEvent['day'] = $strDay;
 		$arrEvent['month'] = $strMonth;
 		$arrEvent['parent'] = $intCalendar;
-		$arrEvent['calendar'] = $objEvents->getRelated('pid');
+		$arrEvent['calendar'] = CalendarModel::findById($objEvents->pid);
 		$arrEvent['link'] = $objEvents->title;
 		$arrEvent['target'] = '';
 		$arrEvent['title'] = StringUtil::specialchars($objEvents->title, true);
-		$arrEvent['href'] = System::getContainer()->get('contao.routing.content_url_generator')->generate($objEvents);
+		$arrEvent['href'] = $url;
 		$arrEvent['class'] = $objEvents->cssClass ? ' ' . $objEvents->cssClass : '';
 		$arrEvent['recurring'] = $recurring;
 		$arrEvent['until'] = $until;
@@ -317,7 +325,7 @@ abstract class Events extends Module
 		// Display the "read more" button for external/article links
 		if ($objEvents->source != 'default')
 		{
-			$arrEvent['hasDetails'] = true;
+			$arrEvent['hasDetails'] = null !== $url;
 		}
 
 		// Compile the event text
@@ -325,7 +333,7 @@ abstract class Events extends Module
 		{
 			$id = $objEvents->id;
 
-			$arrEvent['details'] = function () use ($id) {
+			$arrEvent['details'] = Template::once(function () use ($id) {
 				$strDetails = '';
 				$objElement = ContentModel::findPublishedByPidAndTable($id, 'tl_calendar_events');
 
@@ -338,11 +346,11 @@ abstract class Events extends Module
 				}
 
 				return $strDetails;
-			};
+			});
 
-			$arrEvent['hasDetails'] = static function () use ($id) {
+			$arrEvent['hasDetails'] = null === $url ? false : Template::once(static function () use ($id) {
 				return ContentModel::countPublishedByPidAndTable($id, 'tl_calendar_events') > 0;
-			};
+			});
 		}
 
 		// Get today's start and end timestamp
@@ -440,9 +448,17 @@ abstract class Events extends Module
 			'@type' => 'Event',
 			'identifier' => '#/schema/events/' . $objEvent->id,
 			'name' => $htmlDecoder->inputEncodedToPlainText($objEvent->title),
-			'url' => $urlGenerator->generate($objEvent),
 			'startDate' => $objEvent->addTime ? date('Y-m-d\TH:i:sP', $objEvent->startTime) : date('Y-m-d', $objEvent->startTime)
 		);
+
+		try
+		{
+			$jsonLd['url'] = $urlGenerator->generate($objEvent);
+		}
+		catch (ExceptionInterface)
+		{
+			// noop
+		}
 
 		if ($objEvent->startTime !== $objEvent->endTime)
 		{

@@ -73,11 +73,9 @@ class CoreResponseContextFactory
     public function createContaoWebpageResponseContext(PageModel $pageModel): ResponseContext
     {
         $context = $this->createWebpageResponseContext();
+        $title = $this->htmlDecoder->inputEncodedToPlainText(($pageModel->pageTitle ?: $pageModel->title) ?: '');
+
         $htmlHeadBag = $context->get(HtmlHeadBag::class);
-        $jsonLdManager = $context->get(JsonLdManager::class);
-
-        $title = $this->htmlDecoder->inputEncodedToPlainText($pageModel->pageTitle ?: $pageModel->title ?: '');
-
         $htmlHeadBag
             ->setTitle($title ?: '')
             ->setMetaDescription($this->htmlDecoder->inputEncodedToPlainText($pageModel->description ?: ''))
@@ -103,9 +101,10 @@ class CoreResponseContextFactory
         }
 
         if ($pageModel->enableCanonical && $pageModel->canonicalKeepParams) {
-            $htmlHeadBag->setKeepParamsForCanonical(array_map('trim', explode(',', $pageModel->canonicalKeepParams)));
+            $htmlHeadBag->setKeepParamsForCanonical(array_map(trim(...), explode(',', $pageModel->canonicalKeepParams)));
         }
 
+        $jsonLdManager = $context->get(JsonLdManager::class);
         $jsonLdManager
             ->getGraphForSchema(JsonLdManager::SCHEMA_CONTAO)
             ->set(
@@ -114,7 +113,7 @@ class CoreResponseContextFactory
                     $pageModel->id,
                     $pageModel->noSearch,
                     $pageModel->protected,
-                    array_map('intval', array_filter((array) $pageModel->groups)),
+                    array_map(\intval(...), array_filter((array) $pageModel->groups)),
                     $this->tokenChecker->isPreviewMode(),
                 ),
             )

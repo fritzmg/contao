@@ -145,8 +145,6 @@ $GLOBALS['TL_DCA']['tl_page'] = array
 	(
 		'id' => array
 		(
-			'label'                   => array('ID'),
-			'search'                  => true,
 			'sql'                     => "int(10) unsigned NOT NULL auto_increment"
 		),
 		'pid' => array
@@ -693,7 +691,7 @@ class tl_page extends Backend
 
 		// Set the default page user and group
 		$GLOBALS['TL_DCA']['tl_page']['fields']['cuser']['default'] = (int) Config::get('defaultUser') ?: $user->id;
-		$GLOBALS['TL_DCA']['tl_page']['fields']['cgroup']['default'] = (int) Config::get('defaultGroup') ?: (int) $user->groups[0];
+		$GLOBALS['TL_DCA']['tl_page']['fields']['cgroup']['default'] = (int) Config::get('defaultGroup') ?: (int) ($user->groups[0] ?? 0);
 
 		// Restrict the page tree
 		if (empty($user->pagemounts) || !is_array($user->pagemounts))
@@ -759,8 +757,7 @@ class tl_page extends Backend
 	{
 		$page->loadDetails();
 
-		/** @var LayoutModel $layout */
-		if (!$layout = $page->getRelated('layout'))
+		if (!$layout = LayoutModel::findById($page->layout))
 		{
 			return '';
 		}
@@ -965,7 +962,7 @@ class tl_page extends Backend
 	 *
 	 * @return string
 	 */
-	public function addIcon($row, $label, DataContainer $dc=null, $imageAttribute='', $blnReturnImage=false, $blnProtected=false, $isVisibleRootTrailPage=false)
+	public function addIcon($row, $label, DataContainer|null $dc=null, $imageAttribute='', $blnReturnImage=false, $blnProtected=false, $isVisibleRootTrailPage=false)
 	{
 		return Backend::addPageIcon($row, $label, $dc, $imageAttribute, $blnReturnImage, $blnProtected, $isVisibleRootTrailPage);
 	}
@@ -990,6 +987,8 @@ class tl_page extends Backend
 		// Generate the aliases
 		if (Input::post('alias') !== null && Input::post('FORM_SUBMIT') == 'tl_select')
 		{
+			$router = System::getContainer()->get('router');
+
 			$objSession = System::getContainer()->get('request_stack')->getSession();
 			$session = $objSession->all();
 			$ids = $session['CURRENT']['IDS'] ?? array();
@@ -1037,6 +1036,7 @@ class tl_page extends Backend
 
 				// Initialize the version manager
 				$objVersions = new Versions('tl_page', $id);
+				$objVersions->setEditUrl($router->generate('contao_backend', array('do'=>'page', 'act'=>'edit', 'id'=>$id, 'rt'=>'1')));
 				$objVersions->initialize();
 
 				// Store the new alias
@@ -1048,7 +1048,7 @@ class tl_page extends Backend
 				$objVersions->create();
 
 				// Update the record stored in the page registry (see #6542)
-				PageModel::findByPk($id)->alias = $strAlias;
+				PageModel::findById($id)->alias = $strAlias;
 			}
 
 			$this->redirect($this->getReferer());

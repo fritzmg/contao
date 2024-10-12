@@ -135,7 +135,6 @@ class ContentDownloads extends ContentDownload
 				}
 				else
 				{
-					/** @var PageModel $objPage */
 					global $objPage;
 
 					$arrMeta = $this->getMetaData($objFiles->meta, $objPage->language);
@@ -181,7 +180,7 @@ class ContentDownloads extends ContentDownload
 					'id'        => $objFiles->id,
 					'uuid'      => $objFiles->uuid,
 					'name'      => $objFile->basename,
-					'title'     => StringUtil::specialchars(sprintf($GLOBALS['TL_LANG']['MSC']['download'], $objFile->basename)),
+					'title'     => StringUtil::specialchars(\sprintf($GLOBALS['TL_LANG']['MSC']['download'], $objFile->basename)),
 					'link'      => $arrMeta['title'] ?? null,
 					'caption'   => $arrMeta['caption'] ?? null,
 					'href'      => $strHref,
@@ -227,7 +226,6 @@ class ContentDownloads extends ContentDownload
 					}
 					else
 					{
-						/** @var PageModel $objPage */
 						global $objPage;
 
 						$arrMeta = $this->getMetaData($objSubfiles->meta, $objPage->language);
@@ -268,7 +266,7 @@ class ContentDownloads extends ContentDownload
 						'id'        => $objSubfiles->id,
 						'uuid'      => $objSubfiles->uuid,
 						'name'      => $objFile->basename,
-						'title'     => StringUtil::specialchars(sprintf($GLOBALS['TL_LANG']['MSC']['download'], $objFile->basename)),
+						'title'     => StringUtil::specialchars(\sprintf($GLOBALS['TL_LANG']['MSC']['download'], $objFile->basename)),
 						'link'      => $arrMeta['title'],
 						'caption'   => $arrMeta['caption'] ?? null,
 						'href'      => $strHref,

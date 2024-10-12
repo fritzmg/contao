@@ -14,7 +14,6 @@ namespace Contao\CoreBundle\Controller\ContentElement;
 
 use Contao\ContentModel;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
-use Contao\CoreBundle\File\MetadataBag;
 use Contao\CoreBundle\Filesystem\FilesystemItem;
 use Contao\CoreBundle\Filesystem\FilesystemItemIterator;
 use Contao\CoreBundle\Filesystem\FilesystemUtil;
@@ -49,14 +48,6 @@ class DownloadsController extends AbstractDownloadContentElementController
         $template->set('sort_mode', $sortMode);
         $template->set('randomize_order', $randomize = 'random' === $model->sortBy);
 
-        // Limit elements; use client-side logic for only displaying the first
-        // $limit elements in case we are dealing with a random order
-        if ($model->numberOfItems > 0 && !$randomize) {
-            $filesystemItems = $filesystemItems->limit($model->numberOfItems);
-        }
-
-        $template->set('limit', $model->numberOfItems > 0 && $randomize ? $model->numberOfItems : null);
-
         $downloads = $this->compileDownloadsList($filesystemItems, $model, $request);
 
         // Explicitly define title/text metadata for a single file
@@ -71,8 +62,8 @@ class DownloadsController extends AbstractDownloadContentElementController
     }
 
     /**
-     * Retrieve selected filesystem items but filter out those, that do not
-     * match the current DCA and configuration constraints.
+     * Retrieve selected filesystem items but filter out those, that do not match the
+     * current DCA and configuration constraints.
      */
     protected function getFilesystemItems(Request $request, ContentModel $model): FilesystemItemIterator
     {
@@ -97,9 +88,7 @@ class DownloadsController extends AbstractDownloadContentElementController
         // Optionally filter out files without metadata
         if ('downloads' === $model->type && $model->metaIgnore) {
             $filesystemItems = $filesystemItems->filter(
-                static fn (FilesystemItem $item): bool =>
-                    /** @var MetadataBag|null $metadata */
-                    null !== ($metadata = $item->getExtraMetadata()['metadata'] ?? null)
+                static fn (FilesystemItem $item): bool => null !== ($metadata = $item->getExtraMetadata()['metadata'] ?? null)
                     && null !== $metadata->getDefault(),
             );
         }

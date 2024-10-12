@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Contao\ManagerBundle\Command;
 
 use Contao\ManagerBundle\Dotenv\DotenvDumper;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -22,6 +23,10 @@ use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
+#[AsCommand(
+    name: 'contao:setup',
+    description: 'Sets up a Contao Managed Edition. This command will be run when executing the "contao-setup" binary.',
+)]
 class ContaoSetupCommand extends Command
 {
     private readonly string $webDir;
@@ -36,7 +41,7 @@ class ContaoSetupCommand extends Command
     private readonly \Closure $createProcessHandler;
 
     /**
-     * @param (\Closure(array<string>):Process)|null $createProcessHandler
+     * @param (\Closure(array<string>): Process)|null $createProcessHandler
      */
     public function __construct(
         private readonly string $projectDir,
@@ -55,11 +60,7 @@ class ContaoSetupCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->setName('contao:setup')
-            ->setDescription('Sets up a Contao Managed Edition. This command will be run when executing the "contao-setup" binary.')
-            ->setHidden(true)
-        ;
+        $this->setHidden(true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -138,7 +139,7 @@ class ContaoSetupCommand extends Command
         );
 
         if (!$process->isSuccessful()) {
-            throw new \RuntimeException(sprintf('An error occurred while executing the "%s" command: %s', implode(' ', $command), $process->getErrorOutput()));
+            throw new \RuntimeException(\sprintf('An error occurred while executing the "%s" command: %s', implode(' ', $command), $process->getErrorOutput()));
         }
     }
 

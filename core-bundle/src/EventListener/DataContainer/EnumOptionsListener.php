@@ -48,7 +48,7 @@ class EnumOptionsListener
             }
 
             if (!is_subclass_of($enum, \BackedEnum::class)) {
-                throw new \LogicException(sprintf('Invalid enum configuration. Class "%s" must extend BackedEnum.', $enum));
+                throw new \LogicException(\sprintf('Invalid enum configuration. Class "%s" must extend BackedEnum.', $enum));
             }
 
             // Generate options from the enum cases
@@ -63,7 +63,6 @@ class EnumOptionsListener
             if (!isset($config['reference']) && is_subclass_of($enum, TranslatableLabelInterface::class)) {
                 $reference = [];
 
-                /** @var TranslatableLabelInterface&\BackedEnum $case */
                 foreach ($enum::cases() as $case) {
                     $reference[$case->value] = $case->label()->trans($this->translator);
                 }

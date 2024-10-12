@@ -19,7 +19,6 @@ use Contao\System;
 use Imagine\Gd\Imagine as GdImagine;
 use Imagine\Gmagick\Imagine as GmagickImagine;
 use Imagine\Imagick\Imagine as ImagickImagine;
-use Symfony\Component\HttpFoundation\Session\Attribute\AttributeBagInterface;
 
 $GLOBALS['TL_DCA']['tl_image_size'] = array
 (
@@ -230,7 +229,6 @@ class tl_image_size extends Backend
 			return;
 		}
 
-		/** @var AttributeBagInterface $objSessionBag */
 		$objSessionBag = System::getContainer()->get('request_stack')->getSession()->getBag('contao_backend');
 		$arrNew = $objSessionBag->get('new_records');
 
@@ -320,7 +318,7 @@ class tl_image_size extends Backend
 	 *
 	 * @return array
 	 */
-	public function getFormats(DataContainer $dc=null)
+	public function getFormats(DataContainer|null $dc=null)
 	{
 		$formats = array();
 		$missingSupport = array();
@@ -330,9 +328,11 @@ class tl_image_size extends Backend
 			$formats = StringUtil::deserialize($dc->value, true);
 		}
 
+		$imageExtensions = System::getContainer()->getParameter('contao.image.valid_extensions');
+
 		foreach ($this->getSupportedFormats() as $format => $isSupported)
 		{
-			if (!in_array($format, System::getContainer()->getParameter('contao.image.valid_extensions')))
+			if (!in_array($format, $imageExtensions))
 			{
 				continue;
 			}
@@ -382,7 +382,7 @@ class tl_image_size extends Backend
 	 *
 	 * @return array
 	 */
-	public function getMetadataFields(DataContainer $dc=null)
+	public function getMetadataFields(DataContainer|null $dc=null)
 	{
 		$options = array();
 

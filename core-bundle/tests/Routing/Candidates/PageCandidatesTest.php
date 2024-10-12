@@ -50,7 +50,7 @@ class PageCandidatesTest extends TestCase
         $this->assertSame($expected['locale'] ?? $expected['default'], $candidates->getCandidates($request));
     }
 
-    public function getCandidatesProvider(): \Generator
+    public static function getCandidatesProvider(): iterable
     {
         yield [
             '/foo.html',
@@ -357,7 +357,8 @@ class PageCandidatesTest extends TestCase
             ],
         ];
 
-        // Ensure that 0 does not trigger the "AbstractCandidates::getCandidates cannot handle empty path" exception
+        // Ensure that 0 does not trigger the "AbstractCandidates::getCandidates cannot
+        // handle empty path" exception
         yield [
             '/0',
             ['.html'],

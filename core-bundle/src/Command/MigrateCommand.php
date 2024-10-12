@@ -27,6 +27,10 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+#[AsCommand(
+    name: 'contao:migrate',
+    description: 'Executes migrations and updates the database schema.',
+)]
 class MigrateCommand extends Command
 {
     private SymfonyStyle|null $io = null;
@@ -45,8 +49,6 @@ class MigrateCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setName('contao:migrate')
-            ->setDescription('Executes migrations and updates the database schema.')
             ->addOption('with-deletes', null, InputOption::VALUE_NONE, 'Execute all database migrations including DROP queries. Can be used together with --no-interaction.')
             ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Only update the database schema.')
             ->addOption('migrations-only', null, InputOption::VALUE_NONE, 'Only execute the migrations.')
@@ -105,9 +107,10 @@ class MigrateCommand extends Command
     private function backup(InputInterface $input): bool
     {
         $asJson = 'ndjson' === $input->getOption('format');
+        $skipDropStatements = !$input->isInteractive() && !$input->getOption('with-deletes');
 
         // Return early if there is no work to be done
-        if (!$this->hasWorkToDo()) {
+        if (!$this->hasWorkToDo($skipDropStatements)) {
             if (!$asJson) {
                 $this->io->info('Database dump skipped because there are no migrations to execute.');
             }
@@ -118,7 +121,7 @@ class MigrateCommand extends Command
         $config = $this->backupManager->createCreateConfig();
 
         if (!$asJson) {
-            $this->io->info(sprintf(
+            $this->io->info(\sprintf(
                 'Creating a database dump to "%s" with the default options. Use --no-backup to disable this feature.',
                 $config->getBackup()->getFilename(),
             ));
@@ -156,7 +159,7 @@ class MigrateCommand extends Command
         $specifiedHash = $input->getOption('hash');
 
         if (!\in_array($input->getOption('format'), ['txt', 'ndjson'], true)) {
-            throw new InvalidOptionException(sprintf('Unsupported format "%s".', $input->getOption('format')));
+            throw new InvalidOptionException(\sprintf('Unsupported format "%s".', $input->getOption('format')));
         }
 
         if ($asJson && !$dryRun && $input->isInteractive()) {
@@ -198,18 +201,20 @@ class MigrateCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function hasWorkToDo(): bool
+    private function hasWorkToDo(bool $skipDropStatements = false): bool
     {
         // There are some pending migrations
         if ($this->migrations->hasPending()) {
             return true;
         }
 
-        return [] !== $this->commandCompiler->compileCommands();
+        return [] !== $this->commandCompiler->compileCommands($skipDropStatements);
     }
 
     private function executeMigrations(bool &$dryRun, bool $asJson, string|null $specifiedHash = null): bool
     {
+        $loopControl = 19;
+
         while (true) {
             $first = true;
             $migrationLabels = [];
@@ -241,7 +246,7 @@ class MigrateCommand extends Command
             }
 
             if (null !== $specifiedHash && $specifiedHash !== $actualHash) {
-                throw new InvalidOptionException(sprintf('Specified hash "%s" does not match the actual hash "%s"', $specifiedHash, $actualHash));
+                throw new InvalidOptionException(\sprintf('Specified hash "%s" does not match the actual hash "%s"', $specifiedHash, $actualHash));
             }
 
             if (!$asJson) {
@@ -276,13 +281,25 @@ class MigrateCommand extends Command
             }
 
             if (null !== $specifiedHash) {
-                // Do not run the schema update after migrations got executed
-                // if a hash was specified, because that hash could never match
-                // both, migrations and schema updates
+                // Do not run the schema update after migrations got executed if a hash was specified,
+                // because that hash could never match both, migrations and schema updates
                 $dryRun = true;
 
                 // Do not run the update recursive if a hash was specified
                 break;
+            }
+
+            if ($loopControl-- < 1) {
+                if ($asJson) {
+                    $this->writeNdjson('error', [
+                        'message' => 'The migrations were stopped after 19 iterations as a precaution. There is a high chance of an infinite loop of migrations.',
+                        'isSuccessful' => false,
+                    ]);
+                } else {
+                    $this->io->error('The migrations were stopped after 19 iterations as a precaution. There is a high chance of an infinite loop of migrations. If this is not the case, please re-run the command. To troubleshoot this error, check the shouldRun() method of the migration(s) listed above.');
+                }
+
+                return false;
             }
         }
 
@@ -336,7 +353,7 @@ class MigrateCommand extends Command
             }
 
             if (null !== $specifiedHash && $specifiedHash !== $commandsHash) {
-                throw new InvalidOptionException(sprintf('Specified hash "%s" does not match the actual hash "%s"', $specifiedHash, $commandsHash));
+                throw new InvalidOptionException(\sprintf('Specified hash "%s" does not match the actual hash "%s"', $specifiedHash, $commandsHash));
             }
 
             $options = $withDeletesOption
@@ -445,11 +462,10 @@ class MigrateCommand extends Command
         [$version] = explode('-', (string) $this->connection->fetchOne('SELECT @@version'));
 
         if (version_compare($version, '5.1.0', '<')) {
-            $errors[] =
-                <<<EOF
-                    Your database version is not supported!
-                    Contao requires at least MySQL 5.1.0 but you have version $version. Please update your database version.
-                    EOF;
+            $errors[] = <<<EOF
+                Your database version is not supported!
+                Contao requires at least MySQL 5.1.0 but you have version $version. Please update your database version.
+                EOF;
 
             return $errors;
         }
@@ -461,18 +477,17 @@ class MigrateCommand extends Command
             $row = $this->connection->fetchAssociative("SHOW COLLATION LIKE '$collate'");
 
             if (false === $row) {
-                $errors[] =
-                    <<<EOF
-                        The configured collation is not supported!
-                        The configured collation "$collate" is not available on your server. Please install it (recommended) or configure a different character set and collation in the "config/config.yaml" file.
+                $errors[] = <<<EOF
+                    The configured collation is not supported!
+                    The configured collation "$collate" is not available on your server. Please install it (recommended) or configure a different character set and collation in the "config/config.yaml" file.
 
-                        dbal:
-                            connections:
-                                default:
-                                    default_table_options:
-                                        charset: utf8
-                                        collation: utf8_unicode_ci
-                        EOF;
+                    dbal:
+                        connections:
+                            default:
+                                default_table_options:
+                                    charset: utf8
+                                    collation: utf8_unicode_ci
+                    EOF;
             }
         }
 
@@ -489,36 +504,34 @@ class MigrateCommand extends Command
             }
 
             if (!$engineFound) {
-                $errors[] =
-                    <<<EOF
-                        The configured database engine is not supported!
-                        The configured database engine "$engine" is not available on your server. Please install it (recommended) or configure a different database engine in the "config/config.yaml" file.
+                $errors[] = <<<EOF
+                    The configured database engine is not supported!
+                    The configured database engine "$engine" is not available on your server. Please install it (recommended) or configure a different database engine in the "config/config.yaml" file.
 
-                        dbal:
-                            connections:
-                                default:
-                                    default_table_options:
-                                        engine: MyISAM
-                                        row_format: ~
-                        EOF;
+                    dbal:
+                        connections:
+                            default:
+                                default_table_options:
+                                    engine: MyISAM
+                                    row_format: ~
+                    EOF;
             }
         }
 
         // Check if utf8mb4 can be used if the user has configured it
         if ($engine && $collate && str_starts_with($collate, 'utf8mb4')) {
             if ('innodb' !== strtolower($engine)) {
-                $errors[] =
-                    <<<EOF
-                        Invalid combination of database engine and collation!
-                        The configured database engine "$engine" does not support utf8mb4. Please use InnoDB instead (recommended) or configure a different character set and collation in the "config/config.yaml" file.
+                $errors[] = <<<EOF
+                    Invalid combination of database engine and collation!
+                    The configured database engine "$engine" does not support utf8mb4. Please use InnoDB instead (recommended) or configure a different character set and collation in the "config/config.yaml" file.
 
-                        dbal:
-                            connections:
-                                default:
-                                    default_table_options:
-                                        charset: utf8
-                                        collation: utf8_unicode_ci
-                        EOF;
+                    dbal:
+                        connections:
+                            default:
+                                default_table_options:
+                                    charset: utf8
+                                    collation: utf8_unicode_ci
+                    EOF;
 
                 return $errors;
             }
@@ -530,9 +543,9 @@ class MigrateCommand extends Command
                 return $errors;
             }
 
-            // As there is no reliable way to get the vendor (see #84), we are
-            // guessing based on the version number. The check will not be run
-            // as of MySQL 8 and MariaDB 10.3, so this should be safe.
+            // As there is no reliable way to get the vendor (see #84), we are guessing based
+            // on the version number. The check will not be run as of MySQL 8 and MariaDB
+            // 10.3, so this should be safe.
             $vok = version_compare($version, '10', '>=') ? '10.2.2' : '5.7.7';
 
             // Large prefixes are always enabled as of MySQL 5.7.7 and MariaDB 10.2.2
@@ -542,18 +555,17 @@ class MigrateCommand extends Command
 
             // The innodb_large_prefix option is disabled
             if (!\in_array(strtolower((string) $largePrefixSetting), ['1', 'on'], true)) {
-                $errors[] =
-                    <<<'EOF'
-                        The "innodb_large_prefix" option is not enabled!
-                        The "innodb_large_prefix" option is not enabled on your server. Please enable it (recommended) or configure a different character set and collation in the "config/config.yaml" file.
+                $errors[] = <<<'EOF'
+                    The "innodb_large_prefix" option is not enabled!
+                    The "innodb_large_prefix" option is not enabled on your server. Please enable it (recommended) or configure a different character set and collation in the "config/config.yaml" file.
 
-                        dbal:
-                            connections:
-                                default:
-                                    default_table_options:
-                                        charset: utf8
-                                        collation: utf8_unicode_ci
-                        EOF;
+                    dbal:
+                        connections:
+                            default:
+                                default_table_options:
+                                    charset: utf8
+                                    collation: utf8_unicode_ci
+                    EOF;
             }
 
             $fileFormatSetting = $this->connection->fetchAssociative("SHOW VARIABLES LIKE 'innodb_file_format'")['Value'] ?? '';
@@ -565,15 +577,14 @@ class MigrateCommand extends Command
                 // The innodb_file_per_table option is disabled
                 || (null !== $filePerTableSetting && !\in_array(strtolower((string) $filePerTableSetting), ['1', 'on'], true))
             ) {
-                $errors[] =
-                    <<<'EOF'
-                        InnoDB is not configured properly!
-                        Using large prefixes in MySQL versions prior to 5.7.7 and MariaDB versions prior to 10.2 requires the "Barracuda" file format and the "innodb_file_per_table" option.
+                $errors[] = <<<'EOF'
+                    InnoDB is not configured properly!
+                    Using large prefixes in MySQL versions prior to 5.7.7 and MariaDB versions prior to 10.2 requires the "Barracuda" file format and the "innodb_file_per_table" option.
 
-                        innodb_large_prefix = 1
-                        innodb_file_format = Barracuda
-                        innodb_file_per_table = 1
-                        EOF;
+                    innodb_large_prefix = 1
+                    innodb_file_format = Barracuda
+                    innodb_file_per_table = 1
+                    EOF;
             }
         }
 
@@ -593,17 +604,16 @@ class MigrateCommand extends Command
         if (!array_intersect(explode(',', strtoupper($sqlMode)), ['TRADITIONAL', 'STRICT_ALL_TABLES', 'STRICT_TRANS_TABLES'])) {
             $initOptionsKey = $this->connection->getDriver() instanceof MysqliDriver ? 3 : 1002;
 
-            $warnings[] =
-                <<<EOF
-                    Running MySQL in non-strict mode can cause corrupt or truncated data.
-                    Please enable the strict mode either in your "my.cnf" file or configure the connection options in the "config/config.yaml" as follows:
+            $warnings[] = <<<EOF
+                Running MySQL in non-strict mode can cause corrupt or truncated data.
+                Please enable the strict mode either in your "my.cnf" file or configure the connection options in the "config/config.yaml" as follows:
 
-                    dbal:
-                        connections:
-                            default:
-                                options:
-                                    $initOptionsKey: "SET SESSION sql_mode=(SELECT CONCAT(@@sql_mode, ',TRADITIONAL'))"
-                    EOF;
+                dbal:
+                    connections:
+                        default:
+                            options:
+                                $initOptionsKey: "SET SESSION sql_mode=(SELECT CONCAT(@@sql_mode, ',TRADITIONAL'))"
+                EOF;
         }
 
         return $warnings;

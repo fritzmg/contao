@@ -175,7 +175,7 @@ class Form extends Hybrid
 		$arrLabels = array();
 		$arrFiles = array();
 
-		// Get all form fields
+		/** @var array<FormFieldModel> $arrFields */
 		$arrFields = array();
 		$objFields = FormFieldModel::findPublishedByPid($this->id);
 
@@ -211,7 +211,7 @@ class Form extends Hybrid
 		{
 			foreach ($arrFields as $objField)
 			{
-				/** @var FormFieldModel $objField */
+				/** @var class-string<Widget> $strClass */
 				$strClass = $GLOBALS['TL_FFL'][$objField->type] ?? null;
 
 				// Continue if the class is not defined
@@ -237,7 +237,6 @@ class Form extends Hybrid
 					$arrData['value'] = '';
 				}
 
-				/** @var Widget $objWidget */
 				$objWidget = new $strClass($arrData);
 				$objWidget->required = $objField->mandatory ? true : false;
 
@@ -330,7 +329,6 @@ class Form extends Hybrid
 			&& ($responseContext = System::getContainer()->get('contao.routing.response_context_accessor')->getResponseContext())
 			&& $responseContext->has(HtmlHeadBag::class)
 		) {
-			/** @var HtmlHeadBag $htmlHeadBag */
 			$htmlHeadBag = $responseContext->get(HtmlHeadBag::class);
 			$htmlHeadBag->setTitle($GLOBALS['TL_LANG']['ERR']['form'] . ' - ' . $htmlHeadBag->getTitle());
 		}
@@ -357,14 +355,9 @@ class Form extends Hybrid
 		$this->Template->ajax = $this->isAjaxEnabled();
 
 		// Get the target URL
-		if ($this->method == 'GET')
+		if ($this->method == 'GET' && ($objTarget = PageModel::findById($this->objModel->jumpTo)))
 		{
-			$objTarget = $this->objModel->getRelated('jumpTo');
-
-			if ($objTarget instanceof PageModel)
-			{
-				$this->Template->action = System::getContainer()->get('contao.routing.content_url_generator')->generate($objTarget);
-			}
+			$this->Template->action = System::getContainer()->get('contao.routing.content_url_generator')->generate($objTarget);
 		}
 	}
 
@@ -499,7 +492,7 @@ class Form extends Hybrid
 			// Fallback to default subject
 			if (!$email->subject)
 			{
-				$email->subject = html_entity_decode(System::getContainer()->get('contao.insert_tag.parser')->replaceInline($this->subject), ENT_QUOTES, 'UTF-8');
+				$email->subject = html_entity_decode(System::getContainer()->get('contao.insert_tag.parser')->replaceInline($this->subject), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
 			}
 
 			// Send copy to sender
@@ -512,7 +505,7 @@ class Form extends Hybrid
 			if ($this->format == 'xml')
 			{
 				// Encode the values (see #6053)
-				array_walk_recursive($fields, static function (&$value) { $value = htmlspecialchars($value, ENT_QUOTES|ENT_SUBSTITUTE|ENT_XML1); });
+				array_walk_recursive($fields, static function (&$value) { $value = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_XML1); });
 
 				$objTemplate = new FrontendTemplate('form_xml');
 				$objTemplate->fields = $fields;
@@ -539,7 +532,7 @@ class Form extends Hybrid
 				foreach ($arrFiles as $file)
 				{
 					// Add a link to the uploaded file
-					if (isset($file['uploaded']))
+					if ($file['uploaded'] ?? null)
 					{
 						$uploaded .= "\n" . Environment::get('base') . StringUtil::stripRootDir(\dirname($file['tmp_name'])) . '/' . rawurlencode($file['name']);
 						continue;
@@ -654,7 +647,7 @@ class Form extends Hybrid
 		$targetPageData = null;
 
 		// Check whether there is a jumpTo page
-		if (($objJumpTo = $this->objModel->getRelated('jumpTo')) instanceof PageModel)
+		if ($objJumpTo = PageModel::findById($this->objModel->jumpTo))
 		{
 			$targetPageData = $objJumpTo->row();
 		}

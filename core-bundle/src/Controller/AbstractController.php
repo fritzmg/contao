@@ -53,7 +53,7 @@ abstract class AbstractController extends SymfonyAbstractController
      *
      * @param class-string<T> $class
      *
-     * @return T
+     * @return Adapter&T
      *
      * @phpstan-return Adapter<T>
      */
@@ -84,7 +84,8 @@ abstract class AbstractController extends SymfonyAbstractController
      */
     protected function setCacheHeaders(Response $response, PageModel $pageModel): Response
     {
-        // Do not cache the response if caching was not configured at all or disabled explicitly
+        // Do not cache the response if caching was not configured at all or
+        // disabled explicitly
         if ($pageModel->cache < 1 && $pageModel->clientCache < 1) {
             $response->headers->set('Cache-Control', 'no-cache, no-store');
 
@@ -102,20 +103,18 @@ abstract class AbstractController extends SymfonyAbstractController
             $response->setSharedMaxAge($pageModel->cache); // Automatically sets the response to public
 
             /**
-             * We vary on cookies if a response is cacheable by the shared
-             * cache, so a reverse proxy does not load a response from cache if
-             * the _request_ contains a cookie.
+             * We vary on cookies if a response is cacheable by the shared cache, so a reverse
+             * proxy does not load a response from cache if the _request_ contains a cookie.
              *
-             * This DOES NOT mean that we generate a cache entry for every
-             * response containing a cookie! Responses with cookies will always
-             * be private.
+             * This DOES NOT mean that we generate a cache entry for every response containing
+             * a cookie! Responses with cookies will always be private.
              *
              * @see MakeResponsePrivateListener
              *
-             * However, we want to be able to force the reverse proxy to load a
-             * response from cache, even if the request contains a cookie – in
-             * case the admin has configured to do so. A typical use case would
-             * be serving public pages from cache to logged in members.
+             * However, we want to be able to force the reverse proxy to load a response from
+             * cache, even if the request contains a cookie – in case the admin has
+             * configured to do so. A typical use case would be serving public pages from
+             * cache to logged in members.
              */
             if (!$pageModel->alwaysLoadFromCache) {
                 $response->setVary(['Cookie']);

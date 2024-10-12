@@ -77,7 +77,6 @@ class ModuleEventReader extends Events
 	 */
 	protected function compile()
 	{
-		/** @var PageModel $objPage */
 		global $objPage;
 
 		$this->Template->event = '';
@@ -113,7 +112,6 @@ class ModuleEventReader extends Events
 
 		if ($responseContext?->has(HtmlHeadBag::class))
 		{
-			/** @var HtmlHeadBag $htmlHeadBag */
 			$htmlHeadBag = $responseContext->get(HtmlHeadBag::class);
 			$htmlDecoder = System::getContainer()->get('contao.string.html_decoder');
 
@@ -215,25 +213,25 @@ class ModuleEventReader extends Events
 				}
 				else
 				{
-					$repeat = sprintf($GLOBALS['TL_LANG']['MSC']['cal_multiple_' . $arrRange['unit']], $arrRange['value']);
+					$repeat = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_multiple_' . $arrRange['unit']], $arrRange['value']);
 				}
 
 				if ($objEvent->recurrences > 0)
 				{
-					$until = ' ' . sprintf($GLOBALS['TL_LANG']['MSC']['cal_until'], Date::parse($objPage->dateFormat, $objEvent->repeatEnd));
+					$until = ' ' . \sprintf($GLOBALS['TL_LANG']['MSC']['cal_until'], Date::parse($objPage->dateFormat, $objEvent->repeatEnd));
 				}
 
 				if ($objEvent->recurrences > 0 && $intEndTime <= time())
 				{
-					$recurring = sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat_ended'], $repeat, $until);
+					$recurring = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat_ended'], $repeat, $until);
 				}
 				elseif ($objEvent->addTime)
 				{
-					$recurring = sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d\TH:i:sP', $intStartTime), $strDate . ($strTime ? ' ' . $strTime : ''));
+					$recurring = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d\TH:i:sP', $intStartTime), $strDate . ($strTime ? ' ' . $strTime : ''));
 				}
 				else
 				{
-					$recurring = sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d', $intStartTime), $strDate);
+					$recurring = \sprintf($GLOBALS['TL_LANG']['MSC']['cal_repeat'], $repeat, $until, date('Y-m-d', $intStartTime), $strDate);
 				}
 			}
 		}
@@ -249,7 +247,7 @@ class ModuleEventReader extends Events
 		$objTemplate->recurring = $recurring;
 		$objTemplate->until = $until;
 		$objTemplate->locationLabel = $GLOBALS['TL_LANG']['MSC']['location'];
-		$objTemplate->calendar = $objEvent->getRelated('pid');
+		$objTemplate->calendar = CalendarModel::findById($objEvent->pid);
 		$objTemplate->count = 0; // see #74
 		$objTemplate->details = '';
 		$objTemplate->hasTeaser = false;
@@ -274,7 +272,7 @@ class ModuleEventReader extends Events
 		{
 			$id = $objEvent->id;
 
-			$objTemplate->details = function () use ($id) {
+			$objTemplate->details = Template::once(function () use ($id) {
 				$strDetails = '';
 				$objElement = ContentModel::findPublishedByPidAndTable($id, 'tl_calendar_events');
 
@@ -287,11 +285,11 @@ class ModuleEventReader extends Events
 				}
 
 				return $strDetails;
-			};
+			});
 
-			$objTemplate->hasDetails = static function () use ($id) {
+			$objTemplate->hasDetails = Template::once(static function () use ($id) {
 				return ContentModel::countPublishedByPidAndTable($id, 'tl_calendar_events') > 0;
-			};
+			});
 		}
 
 		$objTemplate->addImage = false;
@@ -438,8 +436,11 @@ class ModuleEventReader extends Events
 			return;
 		}
 
-		/** @var CalendarModel $objCalendar */
-		$objCalendar = $objEvent->getRelated('pid');
+		if (!$objCalendar = CalendarModel::findById($objEvent->pid))
+		{
+			return;
+		}
+
 		$this->Template->allowComments = $objCalendar->allowComments;
 
 		// Comments are not allowed
@@ -460,8 +461,7 @@ class ModuleEventReader extends Events
 			$arrNotifies[] = $GLOBALS['TL_ADMIN_EMAIL'];
 		}
 
-		/** @var UserModel $objAuthor */
-		if ($objCalendar->notify != 'notify_admin' && ($objAuthor = $objEvent->getRelated('author')) instanceof UserModel && $objAuthor->email)
+		if ($objCalendar->notify != 'notify_admin' && ($objAuthor = UserModel::findById($objEvent->author)) && $objAuthor->email)
 		{
 			$arrNotifies[] = $objAuthor->email;
 		}

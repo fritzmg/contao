@@ -76,7 +76,7 @@ class NewsFeedListener
         $article = $event->getArticle();
 
         $item = new Item();
-        $item->setTitle(html_entity_decode($article->headline, ENT_QUOTES, $this->charset));
+        $item->setTitle(html_entity_decode($article->headline, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, $this->charset));
         $item->setLastModified((new \DateTime())->setTimestamp($article->date));
         $item->setLink($this->urlGenerator->generate($article, [], UrlGeneratorInterface::ABSOLUTE_URL));
         $item->setContent($this->getContent($article, $item, $event));
@@ -132,9 +132,7 @@ class NewsFeedListener
 
     private function getAuthor(NewsModel $article): AuthorInterface|null
     {
-        $authorModel = $article->getRelated('author');
-
-        if ($authorModel instanceof UserModel) {
+        if ($authorModel = $this->framework->getAdapter(UserModel::class)->findById($article->author)) {
             return (new Author())->setName($authorModel->name);
         }
 

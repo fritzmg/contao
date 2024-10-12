@@ -17,6 +17,11 @@ services:
             - '@security.helper'
             - '@translator'
 
+    contao.listener.backend_noindex:
+        class: Contao\CoreBundle\EventListener\BackendNoindexListener
+        arguments:
+            - '@contao.routing.scope_matcher'
+
     contao.listener.backend_preview_redirect:
         class: Contao\CoreBundle\EventListener\BackendPreviewRedirectListener
         arguments:
@@ -129,6 +134,9 @@ services:
         arguments:
             - '@database_connection'
 
+    contao.listener.data_container.legacy_gallery_palette:
+        class: Contao\CoreBundle\EventListener\DataContainer\LegacyGalleryPaletteListener
+
     contao.listener.data_container.logout_page_redirect:
         class: Contao\CoreBundle\EventListener\DataContainer\LogoutPageRedirectListener
 
@@ -178,6 +186,13 @@ services:
         arguments:
             - '@request_stack'
 
+    contao.listener.data_container.personal_data_password:
+        class: Contao\CoreBundle\EventListener\DataContainer\PersonalDataPasswordListener
+        arguments:
+            - '@database_connection'
+            - '@translator'
+            - '@security.helper'
+
     contao.listener.data_container.preview_link:
         class: Contao\CoreBundle\EventListener\DataContainer\PreviewLinkListener
         arguments:
@@ -206,10 +221,24 @@ services:
         arguments:
             - '@translator'
 
+    contao.listener.data_container.template_options:
+        class: Contao\CoreBundle\EventListener\DataContainer\TemplateOptionsListener
+        arguments:
+            - '@contao.twig.finder_factory'
+            - '@database_connection'
+            - '@contao.framework'
+            - '@request_stack'
+            - '@contao.twig.filesystem_loader'
+
+    contao.listener.data_container.theme_operations:
+        class: Contao\CoreBundle\EventListener\DataContainer\ThemeOperationsListener
+        arguments:
+            - '@security.helper'
+
     contao.listener.data_container.theme_templates:
         class: Contao\CoreBundle\EventListener\DataContainer\ThemeTemplatesListener
         arguments:
-            - '@contao.twig.filesystem_loader_warmer'
+            - '@contao.twig.filesystem_loader'
             - '@contao.twig.loader.theme_namespace'
             - '@translator'
 
@@ -232,6 +261,11 @@ services:
         arguments:
             - '@security.helper'
 
+    contao.listener.data_container.user_admin_field:
+        class: Contao\CoreBundle\EventListener\DataContainer\UserAdminFieldListener
+        arguments:
+            - '@security.helper'
+
     contao.listener.data_container.validate_custom_rgxp:
         class: Contao\CoreBundle\EventListener\DataContainer\ValidateCustomRgxpListener
         arguments:
@@ -251,29 +285,8 @@ services:
             - '@contao.doctrine.dca_schema_provider'
             - '@messenger.receiver_locator'
 
-    contao.listener.element_template_options:
-        class: Contao\CoreBundle\EventListener\DataContainer\TemplateOptionsListener
-        arguments:
-            - '@contao.twig.finder_factory'
-            - '@database_connection'
-            - '@contao.framework'
-            - '@request_stack'
-            - '@contao.twig.filesystem_loader'
-            - ce_
-            - Contao\ContentProxy
-
     contao.listener.exception_converter:
         class: Contao\CoreBundle\EventListener\ExceptionConverterListener
-
-    contao.listener.form_field_template_options:
-        class: Contao\CoreBundle\EventListener\DataContainer\TemplateOptionsListener
-        arguments:
-            - '@contao.twig.finder_factory'
-            - '@database_connection'
-            - '@contao.framework'
-            - '@request_stack'
-            - '@contao.twig.filesystem_loader'
-            - form_
 
     contao.listener.image_size_options:
         class: Contao\CoreBundle\EventListener\ImageSizeOptionsListener
@@ -286,22 +299,6 @@ services:
         arguments:
             - '%kernel.secret%'
             - '%contao.web_dir%'
-
-    contao.listener.insert_tags.asset:
-        class: Contao\CoreBundle\EventListener\InsertTags\AssetListener
-        arguments:
-            - '@assets.packages'
-
-    contao.listener.insert_tags.date:
-        class: Contao\CoreBundle\EventListener\InsertTags\DateListener
-        arguments:
-            - '@contao.framework'
-            - '@request_stack'
-
-    contao.listener.insert_tags.translation:
-        class: Contao\CoreBundle\EventListener\InsertTags\TranslationListener
-        arguments:
-            - '@translator'
 
     contao.listener.interest_cohort:
         class: Contao\CoreBundle\EventListener\InterestCohortListener
@@ -363,17 +360,6 @@ services:
         class: Contao\CoreBundle\EventListener\MergeHttpHeadersListener
         arguments:
             - '@contao.framework'
-
-    contao.listener.module_template_options:
-        class: Contao\CoreBundle\EventListener\DataContainer\TemplateOptionsListener
-        arguments:
-            - '@contao.twig.finder_factory'
-            - '@database_connection'
-            - '@contao.framework'
-            - '@request_stack'
-            - '@contao.twig.filesystem_loader'
-            - mod_
-            - Contao\ModuleProxy
 
     contao.listener.page_access:
         class: Contao\CoreBundle\EventListener\PageAccessListener
@@ -538,7 +524,8 @@ services:
         arguments:
             - '@monolog.logger.contao.error'
 
-    contao.messenger.worker_listener:
-        class: Contao\CoreBundle\Messenger\EventListener\WorkerListener
+    contao.twig.loader.auto_refresh_template_hierarchy_listener:
+        class: Contao\CoreBundle\Twig\Loader\AutoRefreshTemplateHierarchyListener
         arguments:
-            - '@contao.messenger.auto_fallback_notifier'
+            - '@contao.twig.filesystem_loader'
+            - '%kernel.environment%'

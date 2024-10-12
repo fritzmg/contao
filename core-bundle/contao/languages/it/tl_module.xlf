@@ -177,6 +177,14 @@
         <source>Show these fields in the front end form.</source>
         <target>Seleziona uno o più campi che saranno modificabili dal frontend.</target>
       </trans-unit>
+      <trans-unit id="tl_module.reqFullAuth.0">
+        <source>Require full authentication</source>
+        <target>Richiedere l'autenticazione completa</target>
+      </trans-unit>
+      <trans-unit id="tl_module.reqFullAuth.1">
+        <source>Users with only a &quot;remember me&quot; cookie must verify their identity in order to access the module.</source>
+        <target>Gli utenti che hanno solo un cookie &quot;ricordami&quot; devono verificare la propria identità per accedere al modulo.</target>
+      </trans-unit>
       <trans-unit id="tl_module.memberTpl.0">
         <source>Form template</source>
         <target>Modello form</target>

@@ -18,11 +18,16 @@ use Contao\CoreBundle\Routing\Page\DynamicRouteInterface;
 use Contao\CoreBundle\Routing\Page\PageRegistry;
 use Contao\CoreBundle\Routing\Page\RouteConfig;
 use Contao\PageModel;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+#[AsCommand(
+    name: 'debug:pages',
+    description: 'Displays the page controller configuration.',
+)]
 class DebugPagesCommand extends Command
 {
     /**
@@ -58,14 +63,6 @@ class DebugPagesCommand extends Command
         if ($contentComposition) {
             $this->contentComposition[$type] = $contentComposition;
         }
-    }
-
-    protected function configure(): void
-    {
-        $this
-            ->setName('debug:pages')
-            ->setDescription('Displays the page controller configuration.')
-        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -127,7 +124,7 @@ class DebugPagesCommand extends Command
                 $v = $v ? 'true' : 'false';
             }
 
-            $return[] = sprintf('%s : %s', str_pad($k, $length, ' ', STR_PAD_RIGHT), $v);
+            $return[] = \sprintf('%s : %s', str_pad($k, $length, ' ', STR_PAD_RIGHT), $v);
         }
 
         return $return ? implode("\n", $return) : '-';

@@ -90,7 +90,6 @@ class ModuleEventlist extends Events
 	 */
 	protected function compile()
 	{
-		/** @var PageModel $objPage */
 		global $objPage;
 
 		$blnClearInput = false;
@@ -342,7 +341,7 @@ class ModuleEventlist extends Events
 			// Add the template variables
 			$objTemplate->classList = $event['class'] . ' cal_' . $event['parent'];
 			$objTemplate->classUpcoming = $event['class'] . ' cal_' . $event['parent'];
-			$objTemplate->readMore = StringUtil::specialchars(sprintf($GLOBALS['TL_LANG']['MSC']['readMore'], $event['title']));
+			$objTemplate->readMore = StringUtil::specialchars(\sprintf($GLOBALS['TL_LANG']['MSC']['readMore'], $event['title']));
 			$objTemplate->more = $event['linkText'] ?: $GLOBALS['TL_LANG']['MSC']['more'];
 			$objTemplate->locationLabel = $GLOBALS['TL_LANG']['MSC']['location'];
 
@@ -364,8 +363,7 @@ class ModuleEventlist extends Events
 			// Add an image
 			if ($event['addImage'])
 			{
-				/** @var CalendarEventsModel $eventModel */
-				$eventModel = CalendarEventsModel::findByPk($event['id']);
+				$eventModel = CalendarEventsModel::findById($event['id']);
 				$imgSize = $eventModel->size ?: null;
 
 				// Override the default image size

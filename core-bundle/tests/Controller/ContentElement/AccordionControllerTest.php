@@ -49,7 +49,7 @@ class AccordionControllerTest extends ContentElementTestCase
         $expectedOutput = <<<'HTML'
             <div class="content-accordion">
                 <h3 class="handorgel__header">
-                    <button class="handorgel__header__button">Text</button>
+                    <button class="handorgel__header__button" type="button">Text</button>
                 </h3>
                 <div class="handorgel__content" data-open>
                     <div class="handorgel__content__inner">
@@ -57,7 +57,7 @@ class AccordionControllerTest extends ContentElementTestCase
                     </div>
                 </div>
                 <h3 class="handorgel__header">
-                    <button class="handorgel__header__button">Image</button>
+                    <button class="handorgel__header__button" type="button">Image</button>
                 </h3>
                 <div class="handorgel__content">
                     <div class="handorgel__content__inner">
@@ -68,7 +68,7 @@ class AccordionControllerTest extends ContentElementTestCase
             HTML;
 
         $this->assertSameHtml($expectedOutput, $response->getContent());
-        $this->assertArrayHasKey('handorgel_css', $responseContextData['head']);
+        $this->assertArrayHasKey('handorgel_css', $responseContextData['stylesheets']);
         $this->assertArrayHasKey('handorgel_js', $responseContextData['body']);
     }
 
@@ -103,7 +103,7 @@ class AccordionControllerTest extends ContentElementTestCase
         $expectedOutput = <<<'HTML'
             <div class="content-accordion">
                 <h3 class="handorgel__header">
-                    <button class="handorgel__header__button">Text</button>
+                    <button class="handorgel__header__button" type="button">Text</button>
                 </h3>
                 <div class="handorgel__content">
                     <div class="handorgel__content__inner">
@@ -111,7 +111,7 @@ class AccordionControllerTest extends ContentElementTestCase
                     </div>
                 </div>
                 <h3 class="handorgel__header">
-                    <button class="handorgel__header__button">Image</button>
+                    <button class="handorgel__header__button" type="button">Image</button>
                 </h3>
                 <div class="handorgel__content">
                     <div class="handorgel__content__inner">
@@ -122,7 +122,7 @@ class AccordionControllerTest extends ContentElementTestCase
             HTML;
 
         $this->assertSameHtml($expectedOutput, $response->getContent());
-        $this->assertArrayHasKey('handorgel_css', $responseContextData['head']);
+        $this->assertArrayHasKey('handorgel_css', $responseContextData['stylesheets']);
         $this->assertArrayHasKey('handorgel_js', $responseContextData['body']);
     }
 }

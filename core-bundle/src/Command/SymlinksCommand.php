@@ -17,6 +17,7 @@ use Contao\CoreBundle\Config\ResourceFinderInterface;
 use Contao\CoreBundle\Event\ContaoCoreEvents;
 use Contao\CoreBundle\Event\GenerateSymlinksEvent;
 use Contao\CoreBundle\Util\SymlinkUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,6 +29,10 @@ use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
+#[AsCommand(
+    name: 'contao:symlinks',
+    description: 'Symlinks the public resources into the public directory.',
+)]
 class SymlinksCommand extends Command
 {
     private array $rows = [];
@@ -48,11 +53,7 @@ class SymlinksCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->setName('contao:symlinks')
-            ->setDescription('Symlinks the public resources into the public directory.')
-            ->addArgument('target', InputArgument::OPTIONAL, 'The target directory')
-        ;
+        $this->addArgument('target', InputArgument::OPTIONAL, 'The target directory');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -168,7 +169,7 @@ class SymlinksCommand extends Command
             SymlinkUtil::symlink($target, $link, $this->projectDir);
 
             $this->rows[] = [
-                sprintf(
+                \sprintf(
                     '<fg=green;options=bold>%s</>',
                     '\\' === \DIRECTORY_SEPARATOR ? 'OK' : "\xE2\x9C\x94", // HEAVY CHECK MARK (U+2714)
                 ),
@@ -179,12 +180,12 @@ class SymlinksCommand extends Command
             $this->statusCode = Command::FAILURE;
 
             $this->rows[] = [
-                sprintf(
+                \sprintf(
                     '<fg=red;options=bold>%s</>',
                     '\\' === \DIRECTORY_SEPARATOR ? 'ERROR' : "\xE2\x9C\x98", // HEAVY BALLOT X (U+2718)
                 ),
                 $link,
-                sprintf('<error>%s</error>', $e->getMessage()),
+                \sprintf('<error>%s</error>', $e->getMessage()),
             ];
         }
     }
@@ -232,9 +233,9 @@ class SymlinksCommand extends Command
                 unset($files[$key]);
 
                 $this->rows[] = [
-                    sprintf('<fg=yellow;options=bold>%s</>', '\\' === \DIRECTORY_SEPARATOR ? 'WARNING' : '!'),
+                    \sprintf('<fg=yellow;options=bold>%s</>', '\\' === \DIRECTORY_SEPARATOR ? 'WARNING' : '!'),
                     Path::join($this->webDir, $prepend, $path),
-                    sprintf('<comment>Skipped because %s will be symlinked.</comment>', Path::join($prepend, $otherPath)),
+                    \sprintf('<comment>Skipped because %s will be symlinked.</comment>', Path::join($prepend, $otherPath)),
                 ];
             }
         }

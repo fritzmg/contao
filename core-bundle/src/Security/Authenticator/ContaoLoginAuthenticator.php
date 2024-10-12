@@ -120,8 +120,8 @@ class ContaoLoginAuthenticator extends AbstractAuthenticator implements Authenti
 
     public function authenticate(Request $request): Passport
     {
-        // When the firewall is lazy, the token is not initialized in the "supports" stage, so this check does only work
-        // within the "authenticate" stage.
+        // When the firewall is lazy, the token is not initialized in the "supports"
+        // stage, so this check does only work within the "authenticate" stage.
         $currentToken = $this->tokenStorage->getToken();
 
         if ($currentToken instanceof TwoFactorTokenInterface) {
@@ -197,7 +197,7 @@ class ContaoLoginAuthenticator extends AbstractAuthenticator implements Authenti
         ];
 
         if (!\is_string($credentials['username']) && (!\is_object($credentials['username']) || !method_exists($credentials['username'], '__toString'))) {
-            throw new BadRequestHttpException(sprintf('The key "%s" must be a string, "%s" given.', $this->options['username_parameter'], \gettype($credentials['username'])));
+            throw new BadRequestHttpException(\sprintf('The key "%s" must be a string, "%s" given.', $this->options['username_parameter'], \gettype($credentials['username'])));
         }
 
         $credentials['username'] = trim($credentials['username']);

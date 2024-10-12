@@ -110,15 +110,11 @@ class ModuleNewsReader extends ModuleNews
 			$this->news_template = 'news_full';
 		}
 
-		$arrArticle = $this->parseArticle($objArticle);
-		$this->Template->articles = $arrArticle;
-
 		// Overwrite the page metadata (see #2853, #4955 and #87)
 		$responseContext = System::getContainer()->get('contao.routing.response_context_accessor')->getResponseContext();
 
 		if ($responseContext?->has(HtmlHeadBag::class))
 		{
-			/** @var HtmlHeadBag $htmlHeadBag */
 			$htmlHeadBag = $responseContext->get(HtmlHeadBag::class);
 			$htmlDecoder = System::getContainer()->get('contao.string.html_decoder');
 
@@ -168,6 +164,9 @@ class ModuleNewsReader extends ModuleNews
 			}
 		}
 
+		$arrArticle = $this->parseArticle($objArticle);
+		$this->Template->articles = $arrArticle;
+
 		$bundles = System::getContainer()->getParameter('kernel.bundles');
 
 		// HOOK: comments extension required
@@ -178,8 +177,11 @@ class ModuleNewsReader extends ModuleNews
 			return;
 		}
 
-		/** @var NewsArchiveModel $objArchive */
-		$objArchive = $objArticle->getRelated('pid');
+		if (!$objArchive = NewsArchiveModel::findById($objArticle->pid))
+		{
+			return;
+		}
+
 		$this->Template->allowComments = $objArchive->allowComments;
 
 		// Comments are not allowed
@@ -200,8 +202,7 @@ class ModuleNewsReader extends ModuleNews
 			$arrNotifies[] = $GLOBALS['TL_ADMIN_EMAIL'];
 		}
 
-		/** @var UserModel $objAuthor */
-		if ($objArchive->notify != 'notify_admin' && ($objAuthor = $objArticle->getRelated('author')) instanceof UserModel && $objAuthor->email)
+		if ($objArchive->notify != 'notify_admin' && ($objAuthor = UserModel::findById($objArticle->author)) && $objAuthor->email)
 		{
 			$arrNotifies[] = $objAuthor->email;
 		}

@@ -19,8 +19,8 @@ use Contao\CoreBundle\Routing\ResponseContext\JsonLd\JsonLdManager;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
- * Updates the schema.contao.org schema before rendering it
- * with the current data from the HtmlHeadBag.
+ * Updates the schema.contao.org schema before rendering it with the current data
+ * from the HtmlHeadBag.
  */
 #[AsEventListener]
 class ContaoJsonLdSchemaListener
@@ -41,7 +41,6 @@ class ContaoJsonLdSchemaListener
 
         $htmlHeadBag = $responseContext->get(HtmlHeadBag::class);
 
-        /** @var ContaoPageSchema $schema */
         $schema = $jsonLdManager->getGraphForSchema(JsonLdManager::SCHEMA_CONTAO)->get(ContaoPageSchema::class);
         $schema->updateFromHtmlHeadBag($htmlHeadBag);
     }

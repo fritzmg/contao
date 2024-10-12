@@ -53,7 +53,8 @@ class ContentUrlGenerator implements ResetInterface, RequestContextAwareInterfac
         try {
             $cacheKey = sha1(serialize($content)."\0".serialize($parameters)."\0".$referenceType);
         } catch (\Throwable) {
-            // If $content or $parameters is not serializable, e.g. contains closures, simply skip the cache.
+            // If $content or $parameters is not serializable, e.g. contains closures, simply
+            // skip the cache.
             $cacheKey = null;
         }
 
@@ -173,7 +174,7 @@ class ContentUrlGenerator implements ResetInterface, RequestContextAwareInterfac
     private function getRouteKey(object $content): string
     {
         if (is_subclass_of($content, Model::class)) {
-            return sprintf('%s.%s', $content::getTable(), $content->{$content::getPk()});
+            return \sprintf('%s.%s', $content::getTable(), $content->{$content::getPk()});
         }
 
         // If the content is a Doctrine ORM entity, try using its identifier
@@ -192,7 +193,7 @@ class ContentUrlGenerator implements ResetInterface, RequestContextAwareInterfac
             ->getSingleIdentifierValue($content)
         ;
 
-        return sprintf('%s.%s', $metadata->getTableName(), $identifier);
+        return \sprintf('%s.%s', $metadata->getTableName(), $identifier);
     }
 
     /**

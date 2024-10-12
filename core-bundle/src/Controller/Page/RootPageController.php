@@ -39,13 +39,11 @@ class RootPageController extends AbstractController
 
     private function getNextPage(int $rootPageId): PageModel
     {
-        $nextPage = $this->getContaoAdapter(PageModel::class)->findFirstPublishedByPid($rootPageId);
-
-        if ($nextPage instanceof PageModel) {
+        if ($nextPage = $this->getContaoAdapter(PageModel::class)->findFirstPublishedByPid($rootPageId)) {
             return $nextPage;
         }
 
-        $this->logger?->error(sprintf('No active page found under root page "%s"', $rootPageId));
+        $this->logger?->error(\sprintf('No active page found under root page "%s"', $rootPageId));
 
         throw new NoActivePageFoundException('No active page found under root page.');
     }
