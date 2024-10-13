@@ -66,7 +66,9 @@ class MigrateCommandTest extends TestCase
      */
     public function testAbortsEarlyIfNonInteractiveAndThereAreOnlyDropMigrations(): void
     {
-        $this->expectDeprecation('%sgetWrappedConnection method is deprecated%s');
+        if (method_exists(Connection::class, 'getWrappedConnection')) {
+            $this->expectDeprecation('%sgetWrappedConnection method is deprecated%s');
+        }
 
         $backupManager = $this->createBackupManager(false);
 
