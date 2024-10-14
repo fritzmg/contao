@@ -206,7 +206,7 @@ class ResultTest extends TestCase
     }
 
     /**
-     * @param array<array<string, string>> $data
+     * @param list<array<string, string>> $data
      *
      * @return array<Result|object>
      */
@@ -215,8 +215,9 @@ class ResultTest extends TestCase
         $reflection = new \ReflectionClass(ArrayResult::class);
 
         if (\count($reflection->getConstructor()->getParameters()) > 1) {
-            $result = new ArrayResult(array_keys($data[0] ?? []), $data);
+            $result = new ArrayResult(array_keys($data[0] ?? []), array_map(array_values(...), $data));
         } else {
+            /** @phpstan-ignore arguments.count, argument.type */
             $result = new ArrayResult($data);
         }
 
