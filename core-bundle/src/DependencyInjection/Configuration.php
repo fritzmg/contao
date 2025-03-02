@@ -748,6 +748,10 @@ class Configuration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
+                ->scalarNode('rate_limiter')
+                    ->defaultNull()
+                    ->info('Rate limiter name to use when processing emails.')
+                ->end()
             ->end()
         ;
     }
