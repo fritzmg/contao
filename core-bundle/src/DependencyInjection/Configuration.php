@@ -745,13 +745,14 @@ class Configuration implements ConfigurationInterface
                                 ->info('Overrides the "From" address for any e-mails sent with this mailer transport.')
                                 ->defaultNull()
                             ->end()
+                            ->scalarNode('rate_limiter')
+                                ->defaultNull()
+                                ->info('Rate limiter to use for this transport.')
+                            ->end()
                         ->end()
                     ->end()
                 ->end()
-                ->scalarNode('rate_limiter')
-                    ->defaultNull()
-                    ->info('Rate limiter name to use when processing emails.')
-                ->end()
+
             ->end()
         ;
     }

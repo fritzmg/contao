@@ -608,6 +608,13 @@ services:
         arguments:
             - '@?translator'
 
+    contao.mailer.rate_limiter_locator:
+        class: Symfony\Component\DependencyInjection\ServiceLocator
+        arguments:
+            - []
+        tags:
+            - container.service_locator
+
     contao.menu.backend_builder:
         class: Contao\CoreBundle\Menu\BackendMenuBuilder
         public: true
@@ -627,6 +634,12 @@ services:
         public: true
         arguments:
             - '@contao.menu.matcher'
+
+    contao.messenger.rate_limited_send_email_message_handler:
+        class: Contao\CoreBundle\Messenger\RateLimitedSendEmailMessageHandler
+        arguments:
+            - '@mailer.transports'
+            - '@?contao.mailer.rate_limiter_locator'
 
     contao.messenger.search_index_message_handler:
         class: Contao\CoreBundle\Messenger\MessageHandler\SearchIndexMessageHandler

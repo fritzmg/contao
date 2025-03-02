@@ -52,6 +52,7 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
+use Symfony\Component\RateLimiter\LimiterInterface;
 use Toflar\CronjobSupervisor\Supervisor;
 
 class ContaoCoreExtension extends Extension implements PrependExtensionInterface, ConfigureFilesystemInterface
@@ -160,6 +161,7 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
         $this->handleCspConfig($config, $container);
         $this->handleAltcha($config, $container);
         $this->handTemplateStudioConfig($config, $container, $loader);
+        $this->handleMailerConfig($config, $container, $loader);
 
         $container
             ->registerForAutoconfiguration(PickerProviderInterface::class)
@@ -642,6 +644,28 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
         );
 
         $loader->load('template_studio.yaml');
+    }
+
+    private function handleMailerConfig(array $config, ContainerBuilder $container, LoaderInterface $loader): void
+    {
+        $transportRateLimiterReferences = [];
+
+        foreach ($config['mailer']['transports'] as $transportName => $transportConfig) {
+            if ($transportConfig['rate_limiter']) {
+                if (!interface_exists(LimiterInterface::class)) {
+                    throw new LogicException('Rate limiter cannot be used within Messenger as the RateLimiter component is not installed. Try running "composer require symfony/rate-limiter".');
+                }
+
+                $transportRateLimiterReferences[$transportName] = new Reference('limiter.'.$transportConfig['rate_limiter']);
+            }
+        }
+
+        if (!$transportRateLimiterReferences) {
+            $container->removeDefinition('contao.mailer.rate_limiter_locator');
+        } else {
+            $container->removeDefinition('mailer.messenger.message_handler');
+            $container->getDefinition('contao.mailer.rate_limiter_locator')->replaceArgument(0, $transportRateLimiterReferences);
+        }
     }
 
     /**

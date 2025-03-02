@@ -33,11 +33,11 @@ class RateLimitedSendEmailMessageHandler
     public function __invoke(SendEmailMessage $message): SentMessage|null
     {
         $email = $message->getMessage();
-
+dd($message);
         if ($email instanceof Email) {
-            $transportName = $email->getHeaders()->get('X-Transport')?->getBodyAsString() ?? '_default';
+            $transportName = $email->getHeaders()->get('X-Transport')?->getBodyAsString();
 
-            if ($this->rateLimiterLocator->has($transportName)) {
+            if ($transportName && $this->rateLimiterLocator->has($transportName)) {
                 /** @var LimiterInterface */
                 $limiter = $this->rateLimiterLocator->get($transportName)->create();
                 $limit = $limiter->consume(1);
