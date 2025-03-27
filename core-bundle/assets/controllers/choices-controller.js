@@ -1,17 +1,16 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class ChoicesController extends Controller {
-    addMutationGuard = false;
-    removeMutationGuard = false;
+    mutationGuard = false;
 
     connect() {
-        if (this.addMutationGuard) {
+        if (this.mutationGuard) {
             return;
         }
 
         // Choices wraps the element multiple times during initialization, leading to
         // multiple disconnects/reconnects of the controller that we need to ignore.
-        this.addMutationGuard = true;
+        this.mutationGuard = true;
 
         const select = this.element;
 
@@ -37,7 +36,7 @@ export default class ChoicesController extends Controller {
                 }
 
                 queueMicrotask(() => {
-                    this.addMutationGuard = false;
+                    this.mutationGuard = false;
                 });
             },
             loadingText: Contao.lang.loading,
@@ -50,7 +49,7 @@ export default class ChoicesController extends Controller {
     }
 
     disconnect() {
-        if (this.addMutationGuard || this.removeMutationGuard) {
+        if (this.mutationGuard) {
             return;
         }
 
@@ -67,13 +66,13 @@ export default class ChoicesController extends Controller {
     _removeChoices() {
         // Safely unwrap the element by preventing disconnect/connect calls
         // during the process.
-        this.removeMutationGuard = true;
+        this.mutationGuard = true;
 
         this.choices?.destroy();
         this.choices = null;
 
         queueMicrotask(() => {
-            this.removeMutationGuard = false;
+            this.mutationGuard = false;
         });
     }
 }
