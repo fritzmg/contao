@@ -299,14 +299,14 @@ abstract class Events extends Module
 		$arrEvent['until'] = $until;
 		$arrEvent['begin'] = $intStart;
 		$arrEvent['end'] = $intEnd;
-		$arrEvent['effectiveEndTime'] = $arrEvent['endTime'];
+		$arrEvent['effectiveEndTime'] = $intEnd;
 		$arrEvent['details'] = '';
 		$arrEvent['hasTeaser'] = false;
 
 		// Set open-end events to 23:59:59, so they run until the end of the day (see #4476)
 		if ($intStart == $intEnd && $objEvents->addTime)
 		{
-			$arrEvent['effectiveEndTime'] = strtotime(date('Y-m-d', $arrEvent['endTime']) . ' 23:59:59');
+			$arrEvent['effectiveEndTime'] = strtotime(date('Y-m-d', $intEnd) . ' 23:59:59');
 		}
 
 		// Override the link target
