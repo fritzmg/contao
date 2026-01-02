@@ -13,14 +13,32 @@ declare(strict_types=1);
 namespace Contao\CoreBundle\Tests\EventListener;
 
 use Contao\CoreBundle\EventListener\VirtualFieldsMappingListener;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Tests\TestCase;
 use Contao\DC_File;
 use Contao\DC_Table;
+use Contao\FormPassword;
+use Contao\TextField;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\MockObject\Stub;
 
 class VirtualFieldsMappingListenerTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        $GLOBALS['BE_FFL'] = ['text' => TextField::class, 'password' => FormPassword::class];
+
+        parent::setUp();
+    }
+
+    protected function tearDown(): void
+    {
+        unset($GLOBALS['BE_FFL']);
+
+        parent::tearDown();
+    }
+
     #[DataProvider('virtualFieldsMappingProvider')]
     public function testVirtualFieldsMapping(array $fields, array $expected, string $dc = DC_Table::class): void
     {
@@ -32,7 +50,7 @@ class VirtualFieldsMappingListenerTest extends TestCase
             'palettes' => ['default' => 'foobar'],
         ];
 
-        (new VirtualFieldsMappingListener())('tl_foobar');
+        (new VirtualFieldsMappingListener($this->getFramework()))('tl_foobar');
 
         $this->assertSame($expected, $GLOBALS['TL_DCA']['tl_foobar']['fields']);
 
@@ -111,6 +129,15 @@ class VirtualFieldsMappingListenerTest extends TestCase
             ],
             DC_File::class,
         ];
+
+        yield 'Does not auto map for widgets that do not submit input' => [
+            [
+                'foobar' => ['inputType' => 'password'],
+            ],
+            [
+                'foobar' => ['inputType' => 'password'],
+            ],
+        ];
     }
 
     public function testDoesNotMapForNonEditableDcas(): void
@@ -128,7 +155,7 @@ class VirtualFieldsMappingListenerTest extends TestCase
             'palettes' => ['default' => 'foobar'],
         ];
 
-        (new VirtualFieldsMappingListener())('tl_foobar');
+        (new VirtualFieldsMappingListener($this->getFramework()))('tl_foobar');
 
         /** @phpstan-ignore method.alreadyNarrowedType */
         $this->assertSame(['foobar' => ['inputType' => 'text']], $GLOBALS['TL_DCA']['tl_foobar']['fields']);
@@ -149,11 +176,32 @@ class VirtualFieldsMappingListenerTest extends TestCase
             ],
         ];
 
-        (new VirtualFieldsMappingListener())('tl_foobar');
+        (new VirtualFieldsMappingListener($this->getFramework()))('tl_foobar');
 
         /** @phpstan-ignore method.alreadyNarrowedType */
         $this->assertSame(['foobar' => ['inputType' => 'text']], $GLOBALS['TL_DCA']['tl_foobar']['fields']);
 
         unset($GLOBALS['TL_DCA']);
+    }
+
+    private function getFramework(): ContaoFramework&Stub
+    {
+        $framework = $this->createStub(ContaoFramework::class);
+        $framework
+            ->method('createInstance')
+            ->willReturnCallback(
+                function (string $key): Stub {
+                    $widget = $this->createStub($key);
+                    $widget
+                        ->method('submitInput')
+                        ->willReturn(TextField::class === $key ? true : false)
+                    ;
+
+                    return $widget;
+                },
+            )
+        ;
+
+        return $framework;
     }
 }

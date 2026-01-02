@@ -13,8 +13,10 @@ declare(strict_types=1);
 namespace Contao\CoreBundle\EventListener;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\DataContainer;
 use Contao\DC_Table;
+use Contao\Widget;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 
 /**
@@ -25,8 +27,15 @@ use Doctrine\DBAL\Platforms\MySQLPlatform;
 #[AsHook('loadDataContainer', priority: -4096)]
 class VirtualFieldsMappingListener
 {
-    public function __construct(private readonly string $defaultStorageName = 'jsonData')
-    {
+    /**
+     * @var list<Widget>
+     */
+    private static array $widgets = [];
+
+    public function __construct(
+        private readonly ContaoFramework $contaoFramework,
+        private readonly string $defaultStorageName = 'jsonData',
+    ) {
     }
 
     public function __invoke(string $table): void
@@ -43,10 +52,25 @@ class VirtualFieldsMappingListener
 
         $GLOBALS['TL_DCA'][$table]['fields'] = array_map(
             function (array $config): array {
-                // Automatically save to virtual field in DC_Table
-                if (!\array_key_exists('sql', $config) && !\array_key_exists('saveTo', $config) && !\array_key_exists('input_field_callback', $config) && !\array_key_exists('save_callback', $config)) {
-                    $config['saveTo'] = $this->defaultStorageName;
+                if (\array_key_exists('sql', $config) || \array_key_exists('saveTo', $config) || \array_key_exists('input_field_callback', $config) || \array_key_exists('save_callback', $config) || !isset($config['inputType'])) {
+                    return $config;
                 }
+
+                // Check if widget supports input submission
+                $submitInput = self::$widgets[$config['inputType']] ?? null;
+
+                if (null === $submitInput) {
+                    $class = $GLOBALS['BE_FFL'][$config['inputType']] ?? null;
+                    $submitInput = $class && class_exists($class) ? $this->contaoFramework->createInstance($class)->submitInput() : false;
+                    self::$widgets[$config['inputType']] = $submitInput;
+                }
+
+                if (!$submitInput) {
+                    return $config;
+                }
+
+                // Automatically save to virtual field in DC_Table
+                $config['saveTo'] = $this->defaultStorageName;
 
                 return $config;
             },
