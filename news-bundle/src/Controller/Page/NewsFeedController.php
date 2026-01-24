@@ -20,12 +20,13 @@ use Contao\CoreBundle\Routing\Page\PageRoute;
 use Contao\NewsBundle\Event\FetchArticlesForFeedEvent;
 use Contao\NewsBundle\Event\TransformArticleForFeedEvent;
 use Contao\PageModel;
+use Contao\StringUtil;
 use FeedIo\Feed;
 use FeedIo\Specification;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-#[AsPage(contentComposition: false)]
+#[AsPage(path: '', contentComposition: false)]
 class NewsFeedController extends AbstractController implements DynamicRouteInterface
 {
     final public const TYPE = 'news_feed';
@@ -46,6 +47,7 @@ class NewsFeedController extends AbstractController implements DynamicRouteInter
         private readonly ContaoContext $contaoContext,
         private readonly Specification $specification,
         private readonly string $charset,
+        private readonly bool $isDebug = false,
     ) {
     }
 
@@ -57,8 +59,8 @@ class NewsFeedController extends AbstractController implements DynamicRouteInter
         $baseUrl = $staticUrl ?: $request->getSchemeAndHttpHost();
 
         $feed = new Feed();
-        $feed->setTitle(html_entity_decode($pageModel->title, ENT_QUOTES, $this->charset));
-        $feed->setDescription(html_entity_decode($pageModel->feedDescription ?? '', ENT_QUOTES, $this->charset));
+        $feed->setTitle(html_entity_decode($pageModel->title, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, $this->charset));
+        $feed->setDescription(html_entity_decode($pageModel->feedDescription ?? '', ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, $this->charset));
         $feed->setLanguage($pageModel->language);
 
         $event = new FetchArticlesForFeedEvent($feed, $request, $pageModel);
@@ -66,24 +68,35 @@ class NewsFeedController extends AbstractController implements DynamicRouteInter
         $dispatcher = $this->container->get('event_dispatcher');
         $dispatcher->dispatch($event);
 
-        if (null !== ($articles = $event->getArticles())) {
-            foreach ($articles as $article) {
-                $event = new TransformArticleForFeedEvent($article, $feed, $pageModel, $request, $baseUrl);
-                $dispatcher->dispatch($event);
+        foreach ($event->getArticles() ?? [] as $article) {
+            $event = new TransformArticleForFeedEvent($article, $feed, $pageModel, $request, $baseUrl);
+            $dispatcher->dispatch($event);
 
-                $feed->add($event->getItem());
-
-                $this->tagResponse($article);
-                $this->tagResponse('contao.db.tl_news_archive.'.$article->pid);
+            if (!$item = $event->getItem()) {
+                continue;
             }
+
+            $feed->add($item);
+            $this->tagResponse($article);
+        }
+
+        $contentType = self::$contentTypes[$pageModel->feedFormat];
+
+        // Use a more generic Content-Type for the response header in debug mode (see #8589)
+        if ($this->isDebug) {
+            $contentType = preg_replace('~/[a-z]+\+~', '/', $contentType);
         }
 
         $formatter = $this->specification->getStandard($pageModel->feedFormat)->getFormatter();
 
         $response = new Response($formatter->toString($feed));
-        $response->headers->set('Content-Type', self::$contentTypes[$pageModel->feedFormat]);
+        $response->headers->set('Content-Type', $contentType);
 
         $this->setCacheHeaders($response, $pageModel);
+
+        // Always add the reponse tags for the selected archives
+        $archiveIds = StringUtil::deserialize($pageModel->newsArchives, true);
+        $this->tagResponse(array_map(static fn ($id): string => 'contao.db.tl_news_archive.'.$id, $archiveIds));
 
         return $response;
     }
@@ -93,7 +106,7 @@ class NewsFeedController extends AbstractController implements DynamicRouteInter
         $format = $route->getPageModel()->feedFormat;
 
         if (!isset($this->urlSuffixes[$format])) {
-            throw new \RuntimeException(sprintf('%s is not a valid format. Must be one of: %s', $format, implode(',', array_keys($this->urlSuffixes))));
+            throw new \RuntimeException(\sprintf('%s is not a valid format. Must be one of: %s', $format, implode(',', array_keys($this->urlSuffixes))));
         }
 
         $route->setUrlSuffix($this->urlSuffixes[$format]);

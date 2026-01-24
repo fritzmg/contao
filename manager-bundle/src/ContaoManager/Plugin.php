@@ -35,6 +35,7 @@ use FOS\HttpCacheBundle\FOSHttpCacheBundle;
 use League\FlysystemBundle\FlysystemBundle;
 use Nelmio\CorsBundle\NelmioCorsBundle;
 use Nelmio\SecurityBundle\NelmioSecurityBundle;
+use Pdo\Mysql;
 use Symfony\Bundle\DebugBundle\DebugBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\MonologBundle\MonologBundle;
@@ -255,10 +256,11 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
             return $extensionConfigs;
         }
 
+        $key = \defined('Pdo\Mysql::ATTR_MULTI_STATEMENTS') ? Mysql::ATTR_MULTI_STATEMENTS : \PDO::MYSQL_ATTR_MULTI_STATEMENTS;
         [$driver, $options] = $this->parseDbalDriverAndOptions($extensionConfigs, $container);
 
         // Do not add PDO options if custom options have been defined
-        if (isset($options[\PDO::MYSQL_ATTR_MULTI_STATEMENTS])) {
+        if (isset($options[$key])) {
             return $extensionConfigs;
         }
 
@@ -272,7 +274,7 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
                 'connections' => [
                     'default' => [
                         'options' => [
-                            \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,
+                            $key => false,
                         ],
                     ],
                 ],
@@ -363,7 +365,7 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
         [$driver, $options] = $this->parseDbalDriverAndOptions($extensionConfigs, $container);
 
         // Skip if driver is not supported
-        if (null === ($key = ['mysql' => 1002, 'mysqli' => 3][$driver] ?? null)) {
+        if (null === ($key = ['mysql' => 1002, 'mysqli' => 3][$driver ?? ''] ?? null)) {
             return $extensionConfigs;
         }
 
@@ -440,8 +442,8 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
     /**
      * Dynamically adds a default mailer to the config, if no mailer is defined.
      *
-     * We cannot add a default mailer configuration to the skeleton config.yaml,
-     * since different types of configurations are not allowed.
+     * We cannot add a default mailer configuration to the skeleton config.yaml, since
+     * different types of configurations are not allowed.
      *
      * For example, if the Manager Bundle defined
      *
@@ -456,10 +458,10 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
      *             transports:
      *                 foobar: 'smtps://smtp.example.com'
      *
-     * to their config.yaml, the merged configuration will lead to an error, since
-     * you cannot use "framework.mailer.dsn" together with "framework.mailer.transports".
-     * Thus, the default mailer configuration needs to be added dynamically if
-     * not already present.
+     * to their config.yaml, the merged configuration will lead to an error, since you
+     * cannot use "framework.mailer.dsn" together with "framework.mailer.transports".
+     * Thus, the default mailer configuration needs to be added dynamically if not
+     * already present.
      *
      * @return array<string, array<string, array<string, array<string, mixed>>>>
      */
@@ -571,7 +573,7 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
             $dbName .= '?serverVersion='.$this->encodeUrlParameter((string) $version);
         }
 
-        return sprintf(
+        return \sprintf(
             '%s://%s%s:%s%s',
             str_replace('_', '-', $driver),
             $userPassword,
@@ -609,7 +611,7 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
             $portSuffix = ':'.$port;
         }
 
-        return sprintf(
+        return \sprintf(
             '%s://%s%s%s',
             $transport,
             $credentials,

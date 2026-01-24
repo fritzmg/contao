@@ -12,16 +12,16 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\InsertTag;
 
-use Contao\CoreBundle\Controller\InsertTagsController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsInsertTagFlag;
+use Contao\CoreBundle\EventListener\SubrequestCacheSubscriber;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Environment;
 use Contao\InsertTags;
 use Contao\StringUtil;
 use Contao\System;
+use FOS\HttpCache\ResponseTagger;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpKernel\Controller\ControllerReference;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Fragment\FragmentHandler;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -56,6 +56,10 @@ class InsertTagParser implements ResetInterface
             |'.self::TAG_REGEX.'  # Or an insert tag
         )*';
 
+    private const MAX_RECURSION = 64;
+
+    private static int $recursionCount = 0;
+
     /**
      * @var array<string, InsertTagSubscription>
      */
@@ -65,6 +69,11 @@ class InsertTagParser implements ResetInterface
      * @var array<string, InsertTagSubscription>
      */
     private array $blockSubscriptions = [];
+
+    /**
+     * @var array<string, int>
+     */
+    private array $blockSubscriptionEndTags = [];
 
     /**
      * @var array<string, \Closure(InsertTagFlag, InsertTagResult):InsertTagResult>
@@ -77,14 +86,15 @@ class InsertTagParser implements ResetInterface
         private readonly ContaoFramework $framework,
         private readonly LoggerInterface $logger,
         private readonly FragmentHandler $fragmentHandler,
-        private readonly RequestStack $requestStack,
         private InsertTags|null $insertTags = null,
         array $allowedTags = ['*'],
+        private readonly ResponseTagger|null $responseTagger = null,
+        private readonly SubrequestCacheSubscriber|null $subrequestCacheSubscriber = null,
     ) {
         $this->allowedTagsRegex = '('.implode(
             '|',
             array_map(
-                static fn ($allowedTag) => '^'.implode('.+', array_map('preg_quote', explode('*', $allowedTag))).'$',
+                static fn ($allowedTag) => '^'.implode('.+', array_map(preg_quote(...), explode('*', $allowedTag))).'$',
                 $allowedTags ?: [''],
             ),
         ).')';
@@ -92,12 +102,16 @@ class InsertTagParser implements ResetInterface
 
     public function addSubscription(InsertTagSubscription $subscription): void
     {
+        if ($subscription->asFragment) {
+            trigger_deprecation('contao/core-bundle', '5.3', 'Using "asFragment: true" in the #[AsInsertTag] attribute is no longer effective and will fail in Contao 6. Render the desired ESI tag directly or use the fragment insert tag instead.');
+        }
+
         if (1 !== preg_match($this->allowedTagsRegex, $subscription->name)) {
             return;
         }
 
         if (isset($this->blockSubscriptions[$subscription->name])) {
-            throw new \InvalidArgumentException(sprintf('The insert tag "%s" is already registered as a block insert tag.', $subscription->name));
+            throw new \InvalidArgumentException(\sprintf('The insert tag "%s" is already registered as a block insert tag.', $subscription->name));
         }
 
         $this->subscriptions[$subscription->name] = $subscription;
@@ -110,7 +124,16 @@ class InsertTagParser implements ResetInterface
         }
 
         if (isset($this->subscriptions[$subscription->name])) {
-            throw new \InvalidArgumentException(sprintf('The block insert tag "%s" is already registered as a regular insert tag.', $subscription->name));
+            throw new \InvalidArgumentException(\sprintf('The block insert tag "%s" is already registered as a regular insert tag.', $subscription->name));
+        }
+
+        if (null !== $subscription->endTag) {
+            $this->blockSubscriptionEndTags[$subscription->endTag] ??= 0;
+            ++$this->blockSubscriptionEndTags[$subscription->endTag];
+        }
+
+        if (null !== $previousEndTag = $this->blockSubscriptions[$subscription->name]->endTag ?? null) {
+            --$this->blockSubscriptionEndTags[$previousEndTag];
         }
 
         $this->blockSubscriptions[$subscription->name] = $subscription;
@@ -130,7 +153,7 @@ class InsertTagParser implements ResetInterface
             '',
             array_map(
                 static fn ($result) => OutputType::html !== $result->getOutputType() ? StringUtil::specialchars($result->getValue()) : $result->getValue(),
-                $this->executeReplace($input, true, OutputType::html),
+                $this->handleCaching($this->executeReplace($input, true, OutputType::html)),
             ),
         );
     }
@@ -140,7 +163,7 @@ class InsertTagParser implements ResetInterface
      */
     public function replaceChunked(string $input): ChunkedText
     {
-        return $this->toChunkedText($this->executeReplace($input, true));
+        return $this->toChunkedText($this->handleCaching($this->executeReplace($input, true)));
     }
 
     /**
@@ -152,7 +175,7 @@ class InsertTagParser implements ResetInterface
             '',
             array_map(
                 static fn ($result) => OutputType::html !== $result->getOutputType() ? StringUtil::specialchars($result->getValue()) : $result->getValue(),
-                $this->executeReplace($input, false, OutputType::html),
+                $this->handleCaching($this->executeReplace($input, false, OutputType::html)),
             ),
         );
     }
@@ -162,7 +185,7 @@ class InsertTagParser implements ResetInterface
      */
     public function replaceInlineChunked(string $input): ChunkedText
     {
-        return $this->toChunkedText($this->executeReplace($input, false));
+        return $this->toChunkedText($this->handleCaching($this->executeReplace($input, false)));
     }
 
     /**
@@ -248,7 +271,7 @@ class InsertTagParser implements ResetInterface
         $name = array_shift($parameters);
 
         if (!preg_match('/^[a-z\x80-\xFF][a-z0-9_\x80-\xFF]*$/i', $name)) {
-            throw new \InvalidArgumentException(sprintf('Invalid insert tag name "%s"', $name));
+            throw new \InvalidArgumentException(\sprintf('Invalid insert tag name "%s"', $name));
         }
 
         if ($parameters) {
@@ -256,7 +279,7 @@ class InsertTagParser implements ResetInterface
 
             foreach ($parameterMatches[0] ?? [''] as $index => $parameterMatch) {
                 if (!str_starts_with($parameterMatch, '::')) {
-                    throw new \InvalidArgumentException(sprintf('Invalid insert tag parameter syntax "%s"', $parameters[0]));
+                    throw new \InvalidArgumentException(\sprintf('Invalid insert tag parameter syntax "%s"', $parameters[0]));
                 }
 
                 $parameterMatches[0][$index] = substr($parameterMatch, 2);
@@ -291,6 +314,7 @@ class InsertTagParser implements ResetInterface
 
     public function reset(): void
     {
+        self::$recursionCount = 0;
         InsertTags::reset();
     }
 
@@ -299,7 +323,7 @@ class InsertTagParser implements ResetInterface
      */
     public function hasInsertTag(string $name): bool
     {
-        return isset($this->subscriptions[$name]) || isset($this->blockSubscriptions[$name]);
+        return isset($this->subscriptions[$name]) || isset($this->blockSubscriptions[$name]) || ($this->blockSubscriptionEndTags[$name] ?? 0) > 0;
     }
 
     private function doParse(string $input): ParsedSequence
@@ -326,6 +350,26 @@ class InsertTagParser implements ResetInterface
         $result[] = substr($input, $lastOffset);
 
         return new ParsedSequence($result);
+    }
+
+    /**
+     * @param list<InsertTagResult> $replaced
+     *
+     * @return list<InsertTagResult>
+     */
+    private function handleCaching(array $replaced): array
+    {
+        foreach ($replaced as $result) {
+            if ($result->getExpiresAt()) {
+                $this->subrequestCacheSubscriber?->addToCurrentStrategy(
+                    (new Response())->setSharedMaxAge($result->getExpiresAt()->getTimestamp() - (new \DateTimeImmutable())->getTimestamp()),
+                );
+            }
+
+            $this->responseTagger?->addTags($result->getCacheTags());
+        }
+
+        return $replaced;
     }
 
     /**
@@ -407,27 +451,101 @@ class InsertTagParser implements ResetInterface
             return null;
         }
 
-        if ($allowEsiTags && $subscription->asFragment) {
-            return $this->getFragmentForTag($tag);
-        }
-
         if ($subscription->resolveNestedTags) {
             $tag = $this->resolveNestedTags($tag);
         } else {
             $tag = $this->unresolveTag($tag);
         }
 
-        $result = $subscription->service->{$subscription->method}($tag);
-
-        foreach ($tag->getFlags() as $flag) {
-            if ($callback = $this->flagCallbacks[strtolower($flag->getName())] ?? null) {
-                $result = $callback($flag, $result);
-            } else {
-                $result = $this->handleLegacyFlagsHook($result, $flag, $tag);
-            }
+        if (self::$recursionCount >= self::MAX_RECURSION) {
+            throw new \RuntimeException(\sprintf('Maximum insert tag nesting level of %s reached', self::MAX_RECURSION));
         }
 
-        return $result;
+        ++self::$recursionCount;
+
+        try {
+            $result = $subscription->service->{$subscription->method}($tag);
+
+            foreach ($tag->getFlags() as $flag) {
+                // ESI tags need to be replaced before flags can be applied
+                $result = $this->replaceEsiTags($result, $esiTagsCount);
+
+                if ($esiTagsCount) {
+                    $this->logger->error(
+                        \sprintf(
+                            'Using the insert tag flag "%s" in %s on page %s disables lazy loading of the fragment',
+                            $flag->getName(),
+                            $tag->serialize(),
+                            $this->framework->getAdapter(Environment::class)->get('uri'),
+                        ),
+                    );
+                }
+
+                if ($callback = $this->flagCallbacks[strtolower($flag->getName())] ?? null) {
+                    $result = $callback($flag, $result);
+                } else {
+                    $result = $this->handleLegacyFlagsHook($result, $flag, $tag);
+                }
+            }
+
+            if (!$allowEsiTags) {
+                $result = $this->replaceEsiTags($result);
+            }
+
+            return $result;
+        } finally {
+            --self::$recursionCount;
+        }
+    }
+
+    /**
+     * @see \Symfony\Component\HttpKernel\HttpCache\Esi::process()
+     *
+     * @param-out int $esiTagsCount
+     */
+    private function replaceEsiTags(InsertTagResult $result, int|null &$esiTagsCount = 0): InsertTagResult
+    {
+        $esiTagsCount = 0;
+
+        if (OutputType::html !== $result->getOutputType()) {
+            return $result;
+        }
+
+        $chunks = preg_split('#<esi\:include\s+(.*?)\s*(?:/|</esi\:include)>#', $result->getValue(), -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        if (\count($chunks) < 2) {
+            return $result;
+        }
+
+        $i = 1;
+
+        while (isset($chunks[$i])) {
+            ++$esiTagsCount;
+
+            $options = [];
+            preg_match_all('/(src|onerror|alt)="([^"]*?)"/', $chunks[$i], $matches, PREG_SET_ORDER);
+
+            foreach ($matches as $set) {
+                $options[$set[1]] = $set[2];
+            }
+
+            if (!isset($options['src'])) {
+                throw new \RuntimeException('Unable to process an ESI tag without a "src" attribute.');
+            }
+
+            $chunks[$i] = $this->fragmentHandler->render(
+                $options['src'],
+                'inline',
+                [
+                    'alt' => $options['alt'] ?? '',
+                    'ignore_errors' => 'continue' === ($options['onerror'] ?? ''),
+                ],
+            );
+
+            $i += 2;
+        }
+
+        return $result->withValue(implode('', $chunks));
     }
 
     private function renderBlockSubscription(InsertTag $tag, ParsedSequence|null $content = null): ParsedSequence|null
@@ -442,30 +560,17 @@ class InsertTagParser implements ResetInterface
             $tag = $this->unresolveTag($tag);
         }
 
-        return $subscription->service->{$subscription->method}($tag, $content);
-    }
-
-    private function getFragmentForTag(InsertTag $tag): InsertTagResult
-    {
-        $attributes = ['insertTag' => $tag->serialize()];
-
-        if ($scope = $this->requestStack->getCurrentRequest()?->attributes->get('_scope')) {
-            $attributes['_scope'] = $scope;
+        if (self::$recursionCount > self::MAX_RECURSION) {
+            throw new \RuntimeException(\sprintf('Maximum insert tag recursion level of %s reached', self::MAX_RECURSION));
         }
 
-        $query = [
-            'clientCache' => $GLOBALS['objPage']->clientCache ?? 0,
-            'pageId' => $GLOBALS['objPage']->id ?? null,
-            'request' => $this->requestStack->getCurrentRequest()?->getRequestUri(),
-        ];
+        ++self::$recursionCount;
 
-        $esiTag = $this->fragmentHandler->render(
-            new ControllerReference(InsertTagsController::class.'::renderAction', $attributes, $query),
-            'esi',
-            ['ignore_errors' => false], // see #48
-        );
-
-        return new InsertTagResult($esiTag, OutputType::html);
+        try {
+            return $subscription->service->{$subscription->method}($tag, $content);
+        } finally {
+            --self::$recursionCount;
+        }
     }
 
     private function resolveNestedTags(InsertTag $tag): ResolvedInsertTag
@@ -482,7 +587,7 @@ class InsertTagParser implements ResetInterface
             );
         }
 
-        throw new \InvalidArgumentException(sprintf('Unsupported insert tag class "%s"', $tag::class));
+        throw new \InvalidArgumentException(\sprintf('Unsupported insert tag class "%s"', $tag::class));
     }
 
     private function unresolveTag(InsertTag $tag): ParsedInsertTag
@@ -499,7 +604,7 @@ class InsertTagParser implements ResetInterface
             );
         }
 
-        throw new \InvalidArgumentException(sprintf('Unsupported insert tag class "%s"', $tag::class));
+        throw new \InvalidArgumentException(\sprintf('Unsupported insert tag class "%s"', $tag::class));
     }
 
     private function resolveParameters(ParsedParameters $parameters): ResolvedParameters

@@ -280,6 +280,32 @@ class DefaultOperationsListenerTest extends TestCase
         $this->assertSame(['edit', 'foo', 'delete', 'show'], array_keys($operations));
     }
 
+    /**
+     * @todo Remove this again in Contao 5.5!
+     */
+    public function testHandlesForwardCompatibleKeys(): void
+    {
+        $GLOBALS['TL_DCA']['tl_foo'] = [
+            'list' => [
+                'sorting' => [
+                    'mode' => DataContainer::MODE_SORTED,
+                ],
+                'operations' => [
+                    '!edit',
+                    '!delete',
+                    'show',
+                ],
+            ],
+        ];
+
+        ($this->listener)('tl_foo');
+
+        $this->assertArrayHasKey('operations', $GLOBALS['TL_DCA']['tl_foo']['list']);
+        $operations = $GLOBALS['TL_DCA']['tl_foo']['list']['operations'];
+
+        $this->assertSame(['edit', 'delete', 'show'], array_keys($operations));
+    }
+
     public function testManuallySortOperations(): void
     {
         $GLOBALS['TL_DCA']['tl_foo'] = [
@@ -381,6 +407,32 @@ class DefaultOperationsListenerTest extends TestCase
         $operations = $GLOBALS['TL_DCA']['tl_foo']['list']['operations'];
 
         $this->assertSame(['foo', 'delete'], array_keys($operations));
+    }
+
+    public function testDoesNotAddDefaultsIfOneOperationHasADefaultKey(): void
+    {
+        /** @phpstan-var array $GLOBALS (signals PHPStan that the array shape may change) */
+        $GLOBALS['TL_DCA']['tl_foo'] = [
+            'list' => [
+                'sorting' => [
+                    'mode' => DataContainer::MODE_SORTED,
+                ],
+                'operations' => [
+                    'show' => false,
+                    'foo' => [
+                        'href' => 'foo=bar',
+                        'icon' => 'foo.svg',
+                    ],
+                ],
+            ],
+        ];
+
+        ($this->listener)('tl_foo');
+
+        $this->assertArrayHasKey('operations', $GLOBALS['TL_DCA']['tl_foo']['list']);
+        $operations = $GLOBALS['TL_DCA']['tl_foo']['list']['operations'];
+
+        $this->assertSame(['foo'], array_keys($operations));
     }
 
     public function testDoesNotAddEditOperationIfTableIsNotEditable(): void
@@ -562,7 +614,7 @@ class DefaultOperationsListenerTest extends TestCase
         $operation['button_callback']($config);
     }
 
-    public function checkPermissionsProvider(): \Generator
+    public static function checkPermissionsProvider(): iterable
     {
         yield 'edit operation' => [
             'edit',

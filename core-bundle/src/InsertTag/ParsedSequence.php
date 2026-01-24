@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace Contao\CoreBundle\InsertTag;
 
 /**
- * @implements \IteratorAggregate<int,InsertTag|InsertTagResult|string>
+ * @implements \IteratorAggregate<int, InsertTag|InsertTagResult|string>
  */
 final class ParsedSequence implements \IteratorAggregate, \Countable
 {
@@ -32,7 +32,7 @@ final class ParsedSequence implements \IteratorAggregate, \Countable
 
     public function get(int $index): InsertTag|InsertTagResult|string
     {
-        return $this->sequence[$index] ?? throw new \InvalidArgumentException(sprintf('Index "%s" not exists', $index));
+        return $this->sequence[$index] ?? throw new \InvalidArgumentException(\sprintf('Index "%s" not exists', $index));
     }
 
     public function count(): int
@@ -64,7 +64,11 @@ final class ParsedSequence implements \IteratorAggregate, \Countable
         $serialized = '';
 
         foreach ($this as $item) {
-            $serialized .= \is_string($item) ? $item : $item->serialize();
+            $serialized .= match (true) {
+                $item instanceof InsertTag => $item->serialize(),
+                $item instanceof InsertTagResult => $item->getValue(),
+                default => (string) $item,
+            };
         }
 
         return $serialized;

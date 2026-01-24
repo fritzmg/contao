@@ -39,10 +39,10 @@ class CalendarEventsResolverTest extends ContaoTestCase
         $jumpTo = $this->mockClassWithProperties(PageModel::class);
         $content = $this->mockClassWithProperties(CalendarEventsModel::class, ['source' => 'internal', 'jumpTo' => 42]);
 
-        $pageAdapter = $this->mockAdapter(['findPublishedById']);
+        $pageAdapter = $this->mockAdapter(['findById']);
         $pageAdapter
             ->expects($this->once())
-            ->method('findPublishedById')
+            ->method('findById')
             ->with(42)
             ->willReturn($jumpTo)
         ;
@@ -61,10 +61,10 @@ class CalendarEventsResolverTest extends ContaoTestCase
         $article = $this->mockClassWithProperties(ArticleModel::class);
         $content = $this->mockClassWithProperties(CalendarEventsModel::class, ['source' => 'article', 'articleId' => 42]);
 
-        $articleAdapter = $this->mockAdapter(['findPublishedById']);
+        $articleAdapter = $this->mockAdapter(['findById']);
         $articleAdapter
             ->expects($this->once())
-            ->method('findPublishedById')
+            ->method('findById')
             ->with(42)
             ->willReturn($article)
         ;
@@ -84,10 +84,10 @@ class CalendarEventsResolverTest extends ContaoTestCase
         $calendar = $this->mockClassWithProperties(CalendarModel::class, ['jumpTo' => 42]);
         $content = $this->mockClassWithProperties(CalendarEventsModel::class, ['source' => '']);
 
-        $pageAdapter = $this->mockAdapter(['findPublishedById']);
+        $pageAdapter = $this->mockAdapter(['findById']);
         $pageAdapter
             ->expects($this->once())
-            ->method('findPublishedById')
+            ->method('findById')
             ->with(42)
             ->willReturn($target)
         ;
@@ -115,7 +115,7 @@ class CalendarEventsResolverTest extends ContaoTestCase
         $this->assertSame($expected, $resolver->getParametersForContent($content, $pageModel));
     }
 
-    public function getParametersForContentProvider(): \Generator
+    public function getParametersForContentProvider(): iterable
     {
         yield 'Uses the event alias' => [
             $this->mockClassWithProperties(CalendarEventsModel::class, ['id' => 42, 'alias' => 'foobar']),

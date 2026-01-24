@@ -19,9 +19,7 @@ use Contao\CoreBundle\Tests\TestCase;
 use Contao\CoreBundle\Twig\Interop\ContaoEscaper;
 use Contao\System;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Fragment\FragmentHandler;
-use Twig\Environment;
 use Twig\Error\RuntimeError;
 
 class ContaoEscaperTest extends TestCase
@@ -43,7 +41,7 @@ class ContaoEscaperTest extends TestCase
         $this->assertSame($expectedOutput, $this->invokeEscapeHtml($input, 'utf-8'), 'utf-8');
     }
 
-    public function provideHtmlInput(): \Generator
+    public static function provideHtmlInput(): iterable
     {
         yield 'simple string' => [
             'foo',
@@ -69,6 +67,16 @@ class ContaoEscaperTest extends TestCase
             '&amp; &AMP; &ZeroWidthSpace; &NotAnEntitiy; &123;',
             '&amp; &AMP; &ZeroWidthSpace; &amp;NotAnEntitiy; &amp;123;',
         ];
+
+        yield 'string with JSON and nested entities' => [
+            '"foo &quot; bar"',
+            '&quot;foo &amp;quot; bar&quot;',
+        ];
+
+        yield 'string with HTML and nested entities' => [
+            '<span data-foo="&quot;">',
+            '&lt;span data-foo=&quot;&amp;quot;&quot;&gt;',
+        ];
     }
 
     /**
@@ -80,7 +88,7 @@ class ContaoEscaperTest extends TestCase
 
         $container = $this->getContainerWithContaoConfiguration();
         $container->set('contao.security.token_checker', $this->createMock(TokenChecker::class));
-        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class)));
+        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class)));
 
         System::setContainer($container);
 
@@ -104,7 +112,7 @@ class ContaoEscaperTest extends TestCase
         return 'baz';
     }
 
-    public function provideHtmlAttributeInput(): \Generator
+    public static function provideHtmlAttributeInput(): iterable
     {
         yield 'simple string' => [
             'foo',
@@ -119,6 +127,11 @@ class ContaoEscaperTest extends TestCase
         yield 'prevent double encoding' => [
             'A&amp;B',
             'A&amp;B',
+        ];
+
+        yield 'double encode JSON' => [
+            '"A&quot;B"',
+            '&quot;A&amp;quot&#x3B;B&quot;',
         ];
     }
 
@@ -140,11 +153,11 @@ class ContaoEscaperTest extends TestCase
 
     private function invokeEscapeHtml(int|string $input, string|null $charset): string
     {
-        return (new ContaoEscaper())->escapeHtml($this->createMock(Environment::class), $input, $charset);
+        return (new ContaoEscaper())->escapeHtml($input, $charset);
     }
 
     private function invokeEscapeHtmlAttr(int|string $input, string|null $charset): string
     {
-        return (new ContaoEscaper())->escapeHtmlAttr($this->createMock(Environment::class), $input, $charset);
+        return (new ContaoEscaper())->escapeHtmlAttr($input, $charset);
     }
 }

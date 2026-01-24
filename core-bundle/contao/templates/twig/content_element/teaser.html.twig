@@ -2,11 +2,11 @@
 {% extends "@Contao/content_element/_base.html.twig" %}
 {% use "@Contao/component/_read_more.html.twig" %}
 
-{% set headline = {tag_name: 'h1', text: article.title} %}
+{% set headline = teaser_headline|default({tag_name: 'h1', text: article.title}) %}
 
 {% block content %}
     {% block teaser %}
-        {{ article.teaser|default|insert_tag|raw }}
+        {{ article.teaser|default|insert_tag_raw|raw }}
     {% endblock %}
 
     {% block link %}

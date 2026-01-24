@@ -29,8 +29,8 @@ use Twig\Environment as TwigEnvironment;
  *
  * The onKernelResponse method must be connected to the "kernel.response" event.
  *
- * The toolbar is only injected on well-formed HTML with a proper </body> tag,
- * so is never included in sub-requests or ESI requests.
+ * The toolbar is only injected on well-formed HTML with a proper </body> tag, so
+ * is never included in sub-requests or ESI requests.
  *
  * @internal
  */
@@ -49,6 +49,10 @@ class PreviewToolbarListener
 
     public function __invoke(ResponseEvent $event): void
     {
+        if (!$event->isMainRequest()) {
+            return;
+        }
+
         $request = $event->getRequest();
         $response = $event->getResponse();
 
@@ -69,7 +73,7 @@ class PreviewToolbarListener
         // Only inject the toolbar into HTML responses
         if (
             'html' !== $request->getRequestFormat()
-            || !str_contains((string) $response->headers->get('Content-Type'), 'text/html')
+            || ($response->headers->has('Content-Type') && !str_contains((string) $response->headers->get('Content-Type'), 'text/html'))
             || false !== stripos((string) $response->headers->get('Content-Disposition'), 'attachment;')
         ) {
             return;

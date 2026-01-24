@@ -247,7 +247,7 @@ class CoreResponseContextFactoryTest extends TestCase
         $this->assertSame($expected, $responseContext->get(HtmlHeadBag::class)->getCanonicalUriForRequest(new Request()));
     }
 
-    public function getContaoWebpageResponseContextCanonicalUrls(): \Generator
+    public static function getContaoWebpageResponseContextCanonicalUrls(): iterable
     {
         yield ['//example.de/foobar.html', 'https://example.de/foobar.html'];
         yield ['/de/foobar.html', 'https://example.com/de/foobar.html'];
@@ -260,7 +260,7 @@ class CoreResponseContextFactoryTest extends TestCase
     public function testDecodingAndCleanupOnContaoResponseContext(): void
     {
         $container = $this->getContainerWithContaoConfiguration();
-        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class)));
+        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class)));
 
         System::setContainer($container);
 

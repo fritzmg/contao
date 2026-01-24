@@ -58,15 +58,15 @@ class SwiperControllerTest extends ContentElementTestCase
                             image
                         </div>
                     </div>
-                    <button type="button" class="swiper-button-prev"></button>
-                    <button type="button" class="swiper-button-next"></button>
+                    <div class="swiper-button-prev"></div>
+                    <div class="swiper-button-next"></div>
                     <div class="swiper-pagination"></div>
                 </div>
             </div>
             HTML;
 
         $this->assertSameHtml($expectedOutput, $response->getContent());
-        $this->assertArrayHasKey('swiper_css', $responseContextData['head']);
+        $this->assertArrayHasKey('swiper_css', $responseContextData['stylesheets']);
         $this->assertArrayHasKey('swiper_js', $responseContextData['body']);
     }
 }

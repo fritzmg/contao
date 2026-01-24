@@ -50,17 +50,29 @@ class DefaultOperationsListener
 
     private function getForTable(string $table): array
     {
-        $defaults = $this->getDefaults($table);
         $dca = $GLOBALS['TL_DCA'][$table]['list']['operations'] ?? null;
+
+        if ([] === $dca) {
+            return [];
+        }
+
+        $defaults = $this->getDefaults($table);
 
         if (!\is_array($dca)) {
             return $defaults;
         }
 
+        // Forward compatibility with Contao 5.5 (see #8061)
+        // TODO: remove this again in Contao 5.5!
+        foreach ($dca as $k => $v) {
+            if (\is_string($v)) {
+                $dca[$k] = ltrim($v, '!');
+            }
+        }
+
         $operations = [];
 
-        // If none of the defined operations are name-only, we append the operations to
-        // the defaults.
+        // If none of the defined operations are name-only, we prepend the default operations.
         if (!array_filter($dca, static fn ($v, $k) => isset($defaults[$k]) || (\is_string($v) && isset($defaults[$v])), ARRAY_FILTER_USE_BOTH)) {
             $operations = $defaults;
         }
@@ -71,7 +83,11 @@ class DefaultOperationsListener
                 continue;
             }
 
-            $operations[$k] = \is_array($v) ? $v : [$v];
+            if (!\is_array($v)) {
+                continue;
+            }
+
+            $operations[$k] = $v;
         }
 
         return $operations;
@@ -86,7 +102,7 @@ class DefaultOperationsListener
         $ctable = $GLOBALS['TL_DCA'][$table]['config']['ctable'][0] ?? null;
 
         $canEdit = !($GLOBALS['TL_DCA'][$table]['config']['notEditable'] ?? false);
-        $canCopy = !($GLOBALS['TL_DCA'][$table]['config']['closed'] ?? false) && !($GLOBALS['TL_DCA'][$table]['config']['notCopyable'] ?? false);
+        $canCopy = !($GLOBALS['TL_DCA'][$table]['config']['closed'] ?? false) && !($GLOBALS['TL_DCA'][$table]['config']['notCreatable'] ?? false) && !($GLOBALS['TL_DCA'][$table]['config']['notCopyable'] ?? false);
         $canSort = !($GLOBALS['TL_DCA'][$table]['config']['notSortable'] ?? false);
         $canDelete = !($GLOBALS['TL_DCA'][$table]['config']['notDeletable'] ?? false);
 
@@ -106,7 +122,7 @@ class DefaultOperationsListener
             if (DataContainer::MODE_TREE_EXTENDED !== ($GLOBALS['TL_DCA'][$ctable]['list']['sorting']['mode'] ?? null)) {
                 $operations += [
                     'children' => [
-                        'href' => 'table='.$ctable,
+                        'href' => 'table='.$ctable.($ctable === $table ? '&amp;ptable='.$table : ''),
                         'icon' => 'children.svg',
                         'button_callback' => $this->accessChildrenCallback($ctable, $table),
                     ],
@@ -198,7 +214,11 @@ class DefaultOperationsListener
             $subject = new ReadAction($ctable, $data);
 
             if (!$this->security->isGranted(ContaoCorePermissions::DC_PREFIX.$ctable, $subject)) {
-                $operation->disable();
+                if ($ctable === $table) {
+                    $operation->setHtml('');
+                } else {
+                    $operation->disable();
+                }
             }
         };
     }
@@ -226,7 +246,7 @@ class DefaultOperationsListener
     private function toggleCallback(string $table, string $toggleField): \Closure
     {
         return function (DataContainerOperation $operation) use ($toggleField, $table): void {
-            $new = [$toggleField => !($operation['record'][$toggleField] ?? false)];
+            $new = [$toggleField => !($operation->getRecord()[$toggleField] ?? false)];
 
             if (!$this->isGranted(UpdateAction::class, $table, $operation, $new)) {
                 // Do not use DataContainerOperation::disable() because it would not show the
@@ -237,7 +257,8 @@ class DefaultOperationsListener
     }
 
     /**
-     * Finds the one and only toggle field in a DCA. Returns null if multiple fields can be toggled.
+     * Finds the one and only toggle field in a DCA. Returns null if multiple fields
+     * can be toggled.
      */
     private function getToggleField(string $table): string|null
     {
@@ -265,7 +286,7 @@ class DefaultOperationsListener
             CreateAction::class => new CreateAction($table, array_replace($operation->getRecord(), (array) $new)),
             UpdateAction::class => new UpdateAction($table, $operation->getRecord(), $new),
             DeleteAction::class => new DeleteAction($table, $operation->getRecord()),
-            default => throw new \InvalidArgumentException(sprintf('Invalid action class "%s".', $actionClass)),
+            default => throw new \InvalidArgumentException(\sprintf('Invalid action class "%s".', $actionClass)),
         };
 
         return $this->security->isGranted(ContaoCorePermissions::DC_PREFIX.$table, $subject);

@@ -25,6 +25,7 @@ use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Tests\TestCase;
 use Contao\FrontendTemplate;
 use Contao\System;
+use Contao\Template;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\DirectiveSet;
 use Nelmio\SecurityBundle\ContentSecurityPolicy\PolicyManager;
 use Psr\Log\LoggerInterface;
@@ -45,7 +46,7 @@ class TemplateTest extends TestCase
         (new Filesystem())->mkdir(Path::join($this->getTempDir(), 'templates'));
 
         $container = $this->getContainerWithContaoConfiguration($this->getTempDir());
-        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class)));
+        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class)));
 
         System::setContainer($container);
     }
@@ -372,7 +373,7 @@ class TemplateTest extends TestCase
         unset($GLOBALS['objPage']);
     }
 
-    public function provideBuffer(): \Generator
+    public static function provideBuffer(): iterable
     {
         yield 'plain string' => [
             'foo bar',
@@ -499,7 +500,7 @@ class TemplateTest extends TestCase
 
         $expectedHash = base64_encode(hash($algorithm, $script, true));
 
-        $this->assertSame(sprintf("script-src 'self' '%s-%s'", $algorithm, $expectedHash), $response->headers->get('Content-Security-Policy'));
+        $this->assertSame(\sprintf("script-src 'self' '%s-%s'", $algorithm, $expectedHash), $response->headers->get('Content-Security-Policy'));
     }
 
     public function testAddsCspInlineStyleHash(): void
@@ -532,7 +533,7 @@ class TemplateTest extends TestCase
         $expectedHash = base64_encode(hash($algorithm, $style, true));
 
         $this->assertSame($style, $result);
-        $this->assertSame(sprintf("style-src 'self' 'unsafe-hashes' '%s-%s'", $algorithm, $expectedHash), $response->headers->get('Content-Security-Policy'));
+        $this->assertSame(\sprintf("style-src 'self' 'unsafe-hashes' '%s-%s'", $algorithm, $expectedHash), $response->headers->get('Content-Security-Policy'));
     }
 
     public function testExtractsStyleAttributesForCsp(): void
@@ -568,6 +569,25 @@ class TemplateTest extends TestCase
         $algorithm = 'sha256';
         $expectedHash = base64_encode(hash($algorithm, 'text-decoration: underline;', true));
 
-        $this->assertSame(sprintf("style-src 'self' 'unsafe-hashes' '%s-%s'", $algorithm, $expectedHash), $response->headers->get('Content-Security-Policy'));
+        $this->assertSame(\sprintf("style-src 'self' 'unsafe-hashes' '%s-%s'", $algorithm, $expectedHash), $response->headers->get('Content-Security-Policy'));
+    }
+
+    public function testOnceHelperExecutesCodeOnce(): void
+    {
+        $invocationCount = 0;
+
+        $expensiveFunction = static function () use (&$invocationCount) {
+            ++$invocationCount;
+
+            return false;
+        };
+
+        $template = new FrontendTemplate();
+        $template->hasFoo = Template::once($expensiveFunction);
+
+        $this->assertFalse($template->hasFoo, 'first call');
+        $this->assertFalse($template->hasFoo, 'second call');
+
+        $this->assertSame(1, $invocationCount);
     }
 }

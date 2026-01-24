@@ -19,9 +19,11 @@
       </trans-unit>
       <trans-unit id="tl_newsletter.preheader.0">
         <source>Preheader text</source>
+        <target>Text předhlavičky</target>
       </trans-unit>
       <trans-unit id="tl_newsletter.preheader.1">
         <source>Here you can enter a preheader text. A preheader text should be between 40-130 characters long.</source>
+        <target>Zde můžeš zadat text předhlavičky. Měl by mít mezi 40 - 130 znaky. </target>
       </trans-unit>
       <trans-unit id="tl_newsletter.content.0">
         <source>HTML content</source>
@@ -175,7 +177,7 @@
         <source>Not sent yet</source>
         <target>Ještě neodesláno</target>
       </trans-unit>
-      <trans-unit id="tl_newsletter.mailingDate">
+      <trans-unit id="tl_newsletter.date">
         <source>Mailing date</source>
         <target>Datum odeslání</target>
       </trans-unit>

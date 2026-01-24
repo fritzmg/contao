@@ -32,18 +32,19 @@ use Contao\System;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Filesystem\Path;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Fragment\FragmentHandler;
+use Twig\Attribute\FirstClassTwigCallableReady;
 use Twig\Environment;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\CoreExtension;
 use Twig\Extension\EscaperExtension;
+use Twig\Node\BodyNode;
 use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
-use Twig\Node\TextNode;
 use Twig\NodeTraverser;
+use Twig\Runtime\EscaperRuntime;
 use Twig\Source;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
@@ -134,6 +135,7 @@ class ContaoExtensionTest extends TestCase
             'csp_unsafe_inline_style',
             'csp_inline_styles',
             'encode_email',
+            'deserialize',
         ];
 
         $this->assertCount(\count($expectedFilters), $filters);
@@ -158,9 +160,41 @@ class ContaoExtensionTest extends TestCase
 
         $filesystemLoader = $this->createMock(ContaoFilesystemLoader::class);
         $filesystemLoader
-            ->method('getFirst')
+            ->method('getAllFirstByThemeSlug')
             ->with('foo')
-            ->willReturn('@Contao_Bar/foo.html.twig')
+            ->willReturn(['' => '@Contao_Bar/foo.html.twig'])
+        ;
+
+        $includeFunction = $this->getContaoExtension($environment, $filesystemLoader)->getFunctions()[0];
+        $args = [$environment, [], '@Contao/foo'];
+
+        $this->expectExceptionObject($methodCalledException);
+
+        ($includeFunction->getCallable())(...$args);
+    }
+
+    public function testIncludeFunctionDelegatesToTwigIncludeWithThemeContext(): void
+    {
+        $methodCalledException = new \Exception();
+
+        $environment = $this->createMock(Environment::class);
+        $environment
+            ->expects($this->once())
+            ->method('resolveTemplate')
+            ->with('@Contao_Theme_theme/foo.html.twig')
+            ->willThrowException($methodCalledException)
+        ;
+
+        $filesystemLoader = $this->createMock(ContaoFilesystemLoader::class);
+        $filesystemLoader
+            ->method('getAllFirstByThemeSlug')
+            ->with('foo')
+            ->willReturn(['theme' => '@Contao_Theme_theme/foo.html.twig', '' => '@Contao_Bar/foo.html.twig'])
+        ;
+
+        $filesystemLoader
+            ->method('getCurrentThemeSlug')
+            ->willReturn('theme')
         ;
 
         $includeFunction = $this->getContaoExtension($environment, $filesystemLoader)->getFunctions()[0];
@@ -174,6 +208,11 @@ class ContaoExtensionTest extends TestCase
     public function testThrowsIfCoreIncludeFunctionIsNotFound(): void
     {
         $environment = $this->createMock(Environment::class);
+        $environment
+            ->method('getRuntime')
+            ->willReturn(new EscaperRuntime())
+        ;
+
         $environment
             ->method('getExtension')
             ->willReturnMap([
@@ -206,17 +245,25 @@ class ContaoExtensionTest extends TestCase
             [$escaperNodeVisitor],
         );
 
+        // TODO: Always use "new TwigFilter('escape')" as soon as we require at least
+        // Twig 3.12.
+        $filter = class_exists(FirstClassTwigCallableReady::class)
+            ? new TwigFilter('escape')
+            : new ConstantExpression('escape', 1);
+
         $node = new ModuleNode(
-            new FilterExpression(
-                new TextNode('text', 1),
-                new ConstantExpression('escape', 1),
-                new Node([
-                    new ConstantExpression('html', 1),
-                    new ConstantExpression(null, 1),
-                    new ConstantExpression(true, 1),
-                ]),
-                1,
-            ),
+            new BodyNode([
+                new FilterExpression(
+                    new ConstantExpression('text', 1),
+                    $filter,
+                    new Node([
+                        new ConstantExpression('html', 1),
+                        new ConstantExpression(null, 1),
+                        new ConstantExpression(true, 1),
+                    ]),
+                    1,
+                ),
+            ]),
             null,
             new Node(),
             new Node(),
@@ -253,7 +300,7 @@ class ContaoExtensionTest extends TestCase
             Path::canonicalize(__DIR__.'/../../Fixtures/Twig/legacy'),
         );
 
-        $container->set('contao.insert_tag.parser', new InsertTagParser($this->mockContaoFramework(), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class)));
+        $container->set('contao.insert_tag.parser', new InsertTagParser($this->mockContaoFramework(), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class)));
 
         System::setContainer($container);
 
@@ -274,7 +321,7 @@ class ContaoExtensionTest extends TestCase
             Path::canonicalize(__DIR__.'/../../Fixtures/Twig/legacy'),
         );
 
-        $container->set('contao.insert_tag.parser', new InsertTagParser($this->mockContaoFramework(), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class)));
+        $container->set('contao.insert_tag.parser', new InsertTagParser($this->mockContaoFramework(), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class)));
 
         System::setContainer($container);
 
@@ -315,7 +362,7 @@ class ContaoExtensionTest extends TestCase
 
         $container = $this->getContainerWithContaoConfiguration(Path::canonicalize(__DIR__.'/../../Fixtures/Twig/legacy'));
         $container->set('contao.security.token_checker', $tokenChecker);
-        $container->set('contao.insert_tag.parser', new InsertTagParser($this->mockContaoFramework(), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class)));
+        $container->set('contao.insert_tag.parser', new InsertTagParser($this->mockContaoFramework(), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class)));
 
         System::setContainer($container);
 
@@ -357,10 +404,10 @@ class ContaoExtensionTest extends TestCase
             }
         }
 
-        $this->fail(sprintf('No escaper rule matched template "%s".', $templateName));
+        $this->fail(\sprintf('No escaper rule matched template "%s".', $templateName));
     }
 
-    public function provideTemplateNames(): \Generator
+    public static function provideTemplateNames(): iterable
     {
         yield '@Contao namespace' => ['@Contao/foo.html.twig'];
         yield '@Contao namespace with folder' => ['@Contao/foo/bar.html.twig'];
@@ -370,56 +417,17 @@ class ContaoExtensionTest extends TestCase
     }
 
     /**
-     * We need to adjust some of Twig's core functions (e.g. the escape filter)
-     * but still delegate to the original implementation for maximum compatibility.
-     * This test makes sure the function's signatures remains the same and changes
-     * to the original codebase do not stay unnoticed.
-     *
-     * @dataProvider provideTwigFunctionSignatures
-     */
-    public function testContaoUsesCorrectTwigFunctionSignatures(string $function, array $expectedParameters): void
-    {
-        // Make sure the functions outside the class scope are loaded
-        new \ReflectionClass(EscaperExtension::class);
-
-        $parameters = array_map(
-            static fn (\ReflectionParameter $parameter): array => [
-                ($type = $parameter->getType()) instanceof \ReflectionNamedType ? $type->getName() : null,
-                $parameter->getName(),
-            ],
-            (new \ReflectionFunction($function))->getParameters(),
-        );
-        $this->assertSame($parameters, $expectedParameters);
-    }
-
-    public function provideTwigFunctionSignatures(): \Generator
-    {
-        yield [
-            'twig_escape_filter',
-            [
-                [Environment::class, 'env'],
-                [null, 'string'],
-                [null, 'strategy'],
-                [null, 'charset'],
-                [null, 'autoescape'],
-            ],
-        ];
-
-        yield [
-            'twig_escape_filter_is_safe',
-            [
-                [Node::class, 'filterArgs'],
-            ],
-        ];
-    }
-
-    /**
      * @param Environment&MockObject $environment
      */
     private function getContaoExtension(Environment|null $environment = null, ContaoFilesystemLoader|null $filesystemLoader = null): ContaoExtension
     {
         $environment ??= $this->createMock(Environment::class);
         $filesystemLoader ??= $this->createMock(ContaoFilesystemLoader::class);
+
+        $environment
+            ->method('getRuntime')
+            ->willReturn(new EscaperRuntime())
+        ;
 
         $environment
             ->method('getExtension')

@@ -57,7 +57,7 @@ class StringUtilTest extends TestCase
         $container->set('request_stack', new RequestStack());
         $container->set('contao.security.token_checker', $this->createMock(TokenChecker::class));
         $container->set('monolog.logger.contao', new NullLogger());
-        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class)));
+        $container->set('contao.insert_tag.parser', new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class)));
 
         System::setContainer($container);
     }
@@ -111,7 +111,7 @@ class StringUtilTest extends TestCase
         $this->assertSame($base32.$base32, StringUtil::decodeBase32(StringUtil::encodeBase32($base32.$base32)));
     }
 
-    public function getBase32(): \Generator
+    public static function getBase32(): iterable
     {
         yield ['', ''];
         yield [' ', '40'];
@@ -168,7 +168,7 @@ class StringUtilTest extends TestCase
         StringUtil::decodeBase32($invalid);
     }
 
-    public function getBase32Invalid(): \Generator
+    public static function getBase32Invalid(): iterable
     {
         yield [' '];
         yield ['-'];
@@ -231,6 +231,12 @@ class StringUtilTest extends TestCase
         StringUtil::stripRootDir($this->getFixturesDir());
     }
 
+    public function testDecodesEntities(): void
+    {
+        $this->assertSame("10\u{a0}€", StringUtil::decodeEntities('10&nbsp;€'));
+        $this->assertSame(['sum' => "10\u{a0}€"], StringUtil::decodeEntities(['sum' => '10&nbsp;€']));
+    }
+
     public function testHandlesFalseyValuesWhenDecodingEntities(): void
     {
         $this->assertSame('0', StringUtil::decodeEntities(0));
@@ -248,7 +254,7 @@ class StringUtilTest extends TestCase
         $this->assertSame($expected, StringUtil::trimsplit($pattern, $string));
     }
 
-    public function trimsplitProvider(): \Generator
+    public static function trimsplitProvider(): iterable
     {
         yield 'Test regular split' => [
             ',',
@@ -301,7 +307,7 @@ class StringUtilTest extends TestCase
         $this->assertSame($expected ?? $source, StringUtil::revertInputEncoding($inputEncoded));
     }
 
-    public function getRevertInputEncoding(): \Generator
+    public static function getRevertInputEncoding(): iterable
     {
         yield ['foobar'];
         yield ['foo{{email::test@example.com}}bar'];
@@ -331,7 +337,7 @@ class StringUtilTest extends TestCase
         mb_substitute_character($prevSubstituteCharacter);
     }
 
-    public function validEncodingsProvider(): \Generator
+    public function validEncodingsProvider(): iterable
     {
         yield 'From UTF-8 to ISO-8859-1' => [
             '𝚏ōȏճăᴦ',
@@ -432,7 +438,7 @@ class StringUtilTest extends TestCase
         $this->assertSame($expected, StringUtil::addBasePath($data));
     }
 
-    public function getAddBasePathData(): \Generator
+    public static function getAddBasePathData(): iterable
     {
         yield [
             '<p><a href="{{env::base_path}}/en/foo.html"><img src="{{env::base_path}}/files/img.jpg" alt></a></p>',
@@ -458,7 +464,7 @@ class StringUtilTest extends TestCase
         $this->assertSame($expected, StringUtil::removeBasePath($data));
     }
 
-    public function getRemoveBasePathData(): \Generator
+    public static function getRemoveBasePathData(): iterable
     {
         yield [
             '<p><a href="en/foo.html"><img src="files/img.jpg" alt></a></p>',
@@ -484,7 +490,7 @@ class StringUtilTest extends TestCase
         $this->assertSame($expected, StringUtil::numberToString($source, $precision));
     }
 
-    public function numberToStringProvider(): \Generator
+    public static function numberToStringProvider(): iterable
     {
         yield [0, '0'];
         yield [1, '1'];
@@ -517,7 +523,7 @@ class StringUtilTest extends TestCase
         StringUtil::numberToString($source, $precision);
     }
 
-    public function numberToStringFailsProvider(): \Generator
+    public static function numberToStringFailsProvider(): iterable
     {
         yield [INF, \InvalidArgumentException::class];
         yield [NAN, \InvalidArgumentException::class];
@@ -553,11 +559,12 @@ class StringUtilTest extends TestCase
         $ref[0] = 'b';
         $ref = ['c'];
 
-        /** @phpstan-ignore-next-line because PHPStan gets confused by the references */
+        /** @phpstan-ignore method.impossibleType */
         $this->assertNotSame($array, $dereferenced);
         $this->assertNotSame($ref, $dereferenced[0]);
         $this->assertSame($ref, $array[0]);
 
+        /** @phpstan-ignore method.impossibleType */
         $this->assertSame(
             [
                 ['a'],
@@ -624,5 +631,79 @@ class StringUtilTest extends TestCase
             'Foo <img src="{{file::##simple-token##|urlattr}}" /> Bar',
             StringUtil::insertTagToSrc('Foo <img src="{{file::##simple-token##|urlattr}}" /> Bar'),
         );
+    }
+
+    /**
+     * @dataProvider basicEntitiesProvider
+     */
+    public function testConvertsBasicEntities(array|string $htmlEntities, array|string $basicEntities): void
+    {
+        $this->assertSame($basicEntities, StringUtil::convertBasicEntities($htmlEntities));
+        $this->assertSame($htmlEntities, StringUtil::restoreBasicEntities($basicEntities));
+    }
+
+    public static function basicEntitiesProvider(): iterable
+    {
+        yield 'String value' => [
+            'foo&amp;bar',
+            'foo[&]bar',
+        ];
+
+        yield 'InputUnit field' => [
+            [
+                'unit' => 'h2',
+                'value' => '&lt;strong&gt;',
+            ],
+            [
+                'unit' => 'h2',
+                'value' => '[lt]strong[gt]',
+            ],
+        ];
+
+        yield 'KeyValue wizard' => [
+            [
+                [
+                    'key' => 'sum',
+                    'value' => '10&nbsp;€',
+                ],
+                [
+                    'key' => 'name',
+                    'value' => 'Con&shy;tao',
+                ],
+            ],
+            [
+                [
+                    'key' => 'sum',
+                    'value' => '10[nbsp]€',
+                ],
+                [
+                    'key' => 'name',
+                    'value' => 'Con[-]tao',
+                ],
+            ],
+        ];
+
+        yield 'Non-string values' => [
+            [
+                [
+                    'key' => 'sum',
+                    'value' => 42,
+                ],
+                [
+                    'key' => 'name',
+                    'value' => true,
+                ],
+            ],
+            [
+                [
+                    'key' => 'sum',
+                    'value' => 42,
+                ],
+                [
+                    'key' => 'name',
+                    'value' => true,
+                ],
+            ],
+        ];
     }
 }

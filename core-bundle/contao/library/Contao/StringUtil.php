@@ -208,15 +208,28 @@ class StringUtil
 	 */
 	public static function decodeEntities($strString, $strQuoteStyle=ENT_QUOTES)
 	{
-		if ((string) $strString === '')
+		$replace = static function (&$value) use ($strQuoteStyle) {
+			if (\is_string($value))
+			{
+				$value = preg_replace('/(&#*\w+)[\x00-\x20]+;/i', '$1;', $value);
+				$value = preg_replace('/(&#x*)([0-9a-f]+);/i', '$1$2;', $value);
+				$value = html_entity_decode($value, $strQuoteStyle | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+			}
+
+			// Cast the value to string (backwards compatibility)
+			$value = (string) $value;
+		};
+
+		if (\is_array($strString))
 		{
-			return '';
+			array_walk_recursive($strString, $replace);
+		}
+		else
+		{
+			$replace($strString);
 		}
 
-		$strString = preg_replace('/(&#*\w+)[\x00-\x20]+;/i', '$1;', $strString);
-		$strString = preg_replace('/(&#x*)([0-9a-f]+);/i', '$1$2;', $strString);
-
-		return html_entity_decode($strString, $strQuoteStyle, 'UTF-8');
+		return $strString;
 	}
 
 	/**
@@ -228,7 +241,23 @@ class StringUtil
 	 */
 	public static function convertBasicEntities($strBuffer)
 	{
-		return str_replace(array('&amp;', '&lt;', '&gt;', '&nbsp;', '&shy;', '&ZeroWidthSpace;'), array('[&]', '[lt]', '[gt]', '[nbsp]', '[-]', '[zwsp]'), $strBuffer);
+		$replace = static function (&$value) {
+			if (\is_string($value))
+			{
+				$value = str_replace(array('&amp;', '&lt;', '&gt;', '&nbsp;', '&shy;', '&ZeroWidthSpace;'), array('[&]', '[lt]', '[gt]', '[nbsp]', '[-]', '[zwsp]'), $value);
+			}
+		};
+
+		if (\is_array($strBuffer))
+		{
+			array_walk_recursive($strBuffer, $replace);
+		}
+		else
+		{
+			$replace($strBuffer);
+		}
+
+		return $strBuffer;
 	}
 
 	/**
@@ -240,7 +269,23 @@ class StringUtil
 	 */
 	public static function restoreBasicEntities($strBuffer)
 	{
-		return str_replace(array('[&]', '[&amp;]', '[lt]', '[gt]', '[nbsp]', '[-]', '[zwsp]'), array('&amp;', '&amp;', '&lt;', '&gt;', '&nbsp;', '&shy;', '&ZeroWidthSpace;'), $strBuffer);
+		$replace = static function (&$value) {
+			if (\is_string($value))
+			{
+				$value = str_replace(array('[&]', '[&amp;]', '[lt]', '[gt]', '[nbsp]', '[-]', '[zwsp]'), array('&amp;', '&amp;', '&lt;', '&gt;', '&nbsp;', '&shy;', '&ZeroWidthSpace;'), $value);
+			}
+		};
+
+		if (\is_array($strBuffer))
+		{
+			array_walk_recursive($strBuffer, $replace);
+		}
+		else
+		{
+			$replace($strBuffer);
+		}
+
+		return $strBuffer;
 	}
 
 	/**
@@ -321,7 +366,7 @@ class StringUtil
 
 			foreach ($arrCharacters as $index => $strCharacter)
 			{
-				$strEncoded .= sprintf(($index % 2) ? '&#x%X;' : '&#%s;', mb_ord($strCharacter));
+				$strEncoded .= \sprintf(($index % 2) ? '&#x%X;' : '&#%s;', mb_ord($strCharacter));
 			}
 
 			$strString = str_replace($strEmail, $strEncoded, $strString);
@@ -607,8 +652,14 @@ class StringUtil
 	 */
 	public static function insertTagToSrc($data)
 	{
-		$return = '';
 		$paths = preg_split('/((src|href)="([^"]*){{file::([^"}|]+)[^"}]*}}")/i', $data, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+		if (!$paths)
+		{
+			return $data;
+		}
+
+		$return = '';
 
 		for ($i=0, $c=\count($paths); $i<$c; $i+=5)
 		{
@@ -820,7 +871,7 @@ class StringUtil
 			$strString = static::stripInsertTags($strString);
 		}
 
-		return htmlspecialchars((string) $strString, ENT_QUOTES | ENT_HTML5, 'UTF-8', $blnDoubleEncode);
+		return htmlspecialchars((string) $strString, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', $blnDoubleEncode);
 	}
 
 	/**
@@ -935,7 +986,7 @@ class StringUtil
 		$arrSearch = array('/[^\pN\pL \.\&\/_-]+/u', '/[ \.\&\/-]+/');
 		$arrReplace = array('', '-');
 
-		$strString = html_entity_decode($strString, ENT_QUOTES, 'UTF-8');
+		$strString = html_entity_decode($strString, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
 		$strString = static::stripInsertTags($strString);
 		$strString = preg_replace($arrSearch, $arrReplace, $strString);
 
@@ -958,7 +1009,7 @@ class StringUtil
 	 * @param mixed   $varValue      The serialized string
 	 * @param boolean $blnForceArray True to always return an array
 	 *
-	 * @return mixed The unserialized array or the unprocessed input value
+	 * @return ($blnForceArray is true ? array : mixed) The unserialized array or the unprocessed input value
 	 */
 	public static function deserialize($varValue, $blnForceArray=false)
 	{
@@ -1061,7 +1112,7 @@ class StringUtil
 
 		if (strncmp($normalizedPath, $projectDir, $length) !== 0 || \strlen($normalizedPath) <= $length || $normalizedPath[$length] !== '/')
 		{
-			throw new \InvalidArgumentException(sprintf('Path "%s" is not inside the Contao root dir "%s"', $path, $projectDir));
+			throw new \InvalidArgumentException(\sprintf('Path "%s" is not inside the Contao root dir "%s"', $path, $projectDir));
 		}
 
 		return substr($path, $length + 1);
@@ -1128,12 +1179,12 @@ class StringUtil
 
 		if ($precision <= 1)
 		{
-			throw new \InvalidArgumentException(sprintf('Precision must be greater than 1, "%s" given.', $precision));
+			throw new \InvalidArgumentException(\sprintf('Precision must be greater than 1, "%s" given.', $precision));
 		}
 
-		if (!preg_match('/^(-?)(\d)\.(\d+)e([+-]\d+)$/', sprintf('%.' . ($precision - 1) . 'e', $number), $match))
+		if (!preg_match('/^(-?)(\d)\.(\d+)e([+-]\d+)$/', \sprintf('%.' . ($precision - 1) . 'e', $number), $match))
 		{
-			throw new \InvalidArgumentException(sprintf('Unable to convert "%s" into a string representation.', $number));
+			throw new \InvalidArgumentException(\sprintf('Unable to convert "%s" into a string representation.', is_nan($number) ? 'NAN' : $number));
 		}
 
 		$significantDigits = rtrim($match[2] . $match[3], '0');

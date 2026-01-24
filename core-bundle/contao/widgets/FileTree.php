@@ -75,7 +75,7 @@ class FileTree extends Widget
 		{
 			if ($this->mandatory)
 			{
-				$this->addError(sprintf($GLOBALS['TL_LANG']['ERR']['mandatory'], $this->strLabel));
+				$this->addError(\sprintf($GLOBALS['TL_LANG']['ERR']['mandatory'], $this->strLabel));
 			}
 
 			return '';
@@ -142,7 +142,7 @@ class FileTree extends Widget
 			// Only files within a custom path can be selected
 			if ($this->path && !str_starts_with($objFile->path, $this->path . '/'))
 			{
-				$this->addError(sprintf($GLOBALS['TL_LANG']['ERR']['pathOnly'], $this->path));
+				$this->addError(\sprintf($GLOBALS['TL_LANG']['ERR']['pathOnly'], $this->path));
 				break;
 			}
 
@@ -154,7 +154,7 @@ class FileTree extends Widget
 
 				if (!\in_array($objFile->extension, $extensions))
 				{
-					$this->addError(sprintf($GLOBALS['TL_LANG']['ERR']['extensionsOnly'], $this->extensions));
+					$this->addError(\sprintf($GLOBALS['TL_LANG']['ERR']['extensionsOnly'], $this->extensions));
 					break;
 				}
 			}
@@ -320,6 +320,7 @@ class FileTree extends Widget
           "title": ' . json_encode($GLOBALS['TL_DCA'][$this->strTable]['fields'][$this->strField]['label'][0] ?? '') . ',
           "url": this.href + document.getElementById("ctrl_' . $this->strId . '").value,
           "callback": function(table, value) {
+            AjaxRequest.displayBox(Contao.lang.loading + \' …\');
             new Request.Contao({
               evalScripts: false,
               onSuccess: function(txt, json) {
@@ -328,6 +329,7 @@ class FileTree extends Widget
                 var evt = document.createEvent("HTMLEvents");
                 evt.initEvent("change", true, true);
                 $("ctrl_' . $this->strId . '").dispatchEvent(evt);
+                AjaxRequest.hideBox();
               }
             }).post({"action":"reloadFiletree", "name":"' . $this->strName . '", "value":value.join("\t"), "REQUEST_TOKEN":"' . System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue() . '"});
           }
@@ -414,9 +416,9 @@ class FileTree extends Widget
 				->get('contao.image.preview_factory')
 				->createPreviewPicture($projectDir . '/' . $objFile->path, $pictureConfig);
 
-			$img = $picture->getImg($projectDir);
+			$img = $picture->getImg($projectDir, $container->get('contao.assets.files_context')->getStaticUrl());
 
-			return sprintf('<img src="%s"%s width="%s" height="%s" alt class="%s" title="%s" loading="lazy">', $img['src'], $img['srcset'] != $img['src'] ? ' srcset="' . $img['srcset'] . '"' : '', $img['width'], $img['height'], $strClass, StringUtil::specialchars($strInfo));
+			return \sprintf('<img src="%s"%s width="%s" height="%s" alt class="%s" title="%s" loading="lazy">', $img['src'], $img['srcset'] != $img['src'] ? ' srcset="' . $img['srcset'] . '"' : '', $img['width'], $img['height'], $strClass, StringUtil::specialcharsAttribute($strInfo));
 		}
 
 		return Image::getHtml('placeholder.svg', '', 'class="' . $strClass . '" title="' . StringUtil::specialchars($strInfo) . '"');

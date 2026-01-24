@@ -582,7 +582,7 @@ class ContentCompositionListenerTest extends TestCase
 
         $this->expectSupportsContentComposition(true, $page);
 
-        $dc = $this->createMock(DC_Table::class);
+        $dc = $this->mockClassWithProperties(DC_Table::class, ['table' => 'tl_foobar']);
         $dc
             ->method('getCurrentRecord')
             ->willReturn($this->pageRecord)
@@ -831,7 +831,7 @@ class ContentCompositionListenerTest extends TestCase
         ClockMock::withClockMock(false);
     }
 
-    public function moduleConfigProvider(): \Generator
+    public static function moduleConfigProvider(): iterable
     {
         yield [
             [

@@ -32,7 +32,7 @@ final class FragmentTemplate extends Template
     private array $context = [];
 
     /**
-     * @param \Closure(self, Response|null):Response $onGetResponse
+     * @param \Closure(self, Response|null): Response $onGetResponse
      *
      * @internal
      */
@@ -79,7 +79,7 @@ final class FragmentTemplate extends Template
 
     public function get(string $key): mixed
     {
-        return $this->context[$key] ?? throw new \RuntimeException(sprintf('Key "%s" does not exist.', $key));
+        return $this->context[$key] ?? throw new \RuntimeException(\sprintf('Key "%s" does not exist.', $key));
     }
 
     public function has(string $key): bool
@@ -117,14 +117,13 @@ final class FragmentTemplate extends Template
     }
 
     /**
-     * Renders the template and returns a new Response, that has the rendered
-     * output set as content, as well as the appropriate headers that allows
-     * our SubrequestCacheSubscriber to merge it with others of the same page.
+     * Renders the template and returns a new Response, that has the rendered output
+     * set as content, as well as the appropriate headers that allows our
+     * SubrequestCacheSubscriber to merge it with others of the same page.
      *
-     * For modern fragments, the behavior is identical to calling render() on
-     * the AbstractFragmentController. Like with render(), you can pass a
-     * prebuilt Response if you want to have full control - no headers will be
-     * set then.
+     * For modern fragments, the behavior is identical to calling render() on the
+     * AbstractFragmentController. Like with render(), you can pass a prebuilt
+     * Response if you want to have full control - no headers will be set then.
      */
     public function getResponse(Response|null $preBuiltResponse = null): Response
     {
@@ -179,7 +178,7 @@ final class FragmentTemplate extends Template
     /**
      * @internal
      */
-    public static function getFrontendModule($intId, $strColumn = 'main'): never
+    public static function getFrontendModule($intId, $strColumn = 'main', array $arrPreloadedContentElements = []): never
     {
         self::throwOnAccess();
     }
@@ -187,7 +186,7 @@ final class FragmentTemplate extends Template
     /**
      * @internal
      */
-    public static function getArticle($varId, $blnMultiMode = false, $blnIsInsertTag = false, $strColumn = 'main'): never
+    public static function getArticle($varId, $blnMultiMode = false, $blnIsInsertTag = false, $strColumn = 'main', array $arrPreloadedContentElements = []): never
     {
         self::throwOnAccess();
     }
@@ -668,6 +667,6 @@ final class FragmentTemplate extends Template
     {
         $function = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
 
-        throw new \LogicException(sprintf('Calling the "%s()" function on a FragmentTemplate is not allowed. Set template data instead and optionally output it with getResponse().', $function));
+        throw new \LogicException(\sprintf('Calling the "%s()" function on a FragmentTemplate is not allowed. Set template data instead and optionally output it with getResponse().', $function));
     }
 }

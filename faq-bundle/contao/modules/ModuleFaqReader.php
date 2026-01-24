@@ -13,6 +13,7 @@ namespace Contao;
 use Contao\CoreBundle\Exception\InternalServerErrorException;
 use Contao\CoreBundle\Exception\PageNotFoundException;
 use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Class ModuleFaqReader
@@ -124,7 +125,7 @@ class ModuleFaqReader extends Module
 		$this->Template->question = $objFaq->question;
 		$this->Template->answer = StringUtil::encodeEmail($objFaq->answer);
 		$this->Template->addImage = false;
-		$this->Template->before = false;
+		$this->Template->addBefore = false;
 
 		// Add image
 		if ($objFaq->addImage)
@@ -156,7 +157,7 @@ class ModuleFaqReader extends Module
 			$strAuthor = $objAuthor->name;
 		}
 
-		$this->Template->info = sprintf($GLOBALS['TL_LANG']['MSC']['faqCreatedBy'], Date::parse($objPage->dateFormat, $objFaq->tstamp), $strAuthor);
+		$this->Template->info = \sprintf($GLOBALS['TL_LANG']['MSC']['faqCreatedBy'], Date::parse($objPage->dateFormat, $objFaq->tstamp), $strAuthor);
 
 		// Tag the FAQ (see #2137)
 		if (System::getContainer()->has('fos_http_cache.http.symfony_response_tagger'))
@@ -220,5 +221,10 @@ class ModuleFaqReader extends Module
 		$objConfig->moderate = $objCategory->moderate;
 
 		(new Comments())->addCommentsToTemplate($this->Template, $objConfig, 'tl_faq', $objFaq->id, $arrNotifies);
+	}
+
+	public static function shouldPreload(string $type, PageModel $objPage, Request $request): bool
+	{
+		return $request->attributes->has('auto_item');
 	}
 }

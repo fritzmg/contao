@@ -19,7 +19,7 @@ use Contao\CoreBundle\InsertTag\OutputType;
 use Contao\CoreBundle\InsertTag\ResolvedInsertTag;
 use Contao\Date;
 
-#[AsInsertTag('date', asFragment: true)]
+#[AsInsertTag('date')]
 class DateInsertTag implements InsertTagResolverNestedResolvedInterface
 {
     private const MAPPER = [
@@ -53,7 +53,8 @@ class DateInsertTag implements InsertTagResolverNestedResolvedInterface
     private function getExpireAtFromFormat(string $format): \DateTimeImmutable|null
     {
         preg_match_all('/[A-Za-z]/', $format, $matches);
-        $usedFormatChars = array_unique($matches[0] ?? []);
+
+        $usedFormatChars = array_unique($matches[0]);
 
         // Match textual or leading zero representations
         $mapped = [];

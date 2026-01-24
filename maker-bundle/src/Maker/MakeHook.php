@@ -51,7 +51,7 @@ class MakeHook extends AbstractMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
-            ->addArgument('hook-class', InputArgument::REQUIRED, sprintf('Enter a class name for the listener (e.g. <fg=yellow>%sListener</>)', Str::asClassName(Str::getRandomTerm())))
+            ->addArgument('hook-class', InputArgument::REQUIRED, \sprintf('Enter a class name for the listener (e.g. <fg=yellow>%sListener</>)', Str::asClassName(Str::getRandomTerm())))
         ;
     }
 
@@ -116,7 +116,7 @@ class MakeHook extends AbstractMaker
         $hooks = [];
 
         foreach ($yaml['hooks'] as $key => $config) {
-            $hooks[$key] = new MethodDefinition($config['return_type'], $config['arguments']);
+            $hooks[$key] = new MethodDefinition($config['return_type'] ?? null, $config['arguments'] ?? [], $config['body'] ?? null);
         }
 
         return $hooks;

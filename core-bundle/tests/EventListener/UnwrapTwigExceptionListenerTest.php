@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Tests\EventListener;
 
+use Contao\CoreBundle\EventListener\ExceptionConverterListener;
 use Contao\CoreBundle\EventListener\UnwrapTwigExceptionListener;
 use Contao\CoreBundle\Exception\NoContentResponseException;
 use Contao\CoreBundle\Exception\RedirectResponseException;
@@ -41,7 +42,7 @@ class UnwrapTwigExceptionListenerTest extends TestCase
         $this->assertSame($exception, $event->getThrowable(), 'exception should be unwrapped');
     }
 
-    public function provideExceptionsToUnwrap(): \Generator
+    public static function provideExceptionsToUnwrap(): iterable
     {
         yield 'NoContentResponseException' => [
             new NoContentResponseException(),
@@ -50,6 +51,10 @@ class UnwrapTwigExceptionListenerTest extends TestCase
         yield 'RedirectResponseException' => [
             new RedirectResponseException('/foo'),
         ];
+
+        foreach (array_unique(ExceptionConverterListener::MAPPER) as $exception) {
+            yield $exception => [new $exception()];
+        }
     }
 
     /**
@@ -69,7 +74,7 @@ class UnwrapTwigExceptionListenerTest extends TestCase
         $this->assertSame($throwable, $event->getThrowable(), 'throwable should be left untouched');
     }
 
-    public function provideThrowableToIgnore(): \Generator
+    public static function provideThrowableToIgnore(): iterable
     {
         $exception = new \LogicException('Something went wrong.');
 

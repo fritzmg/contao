@@ -38,7 +38,7 @@ class DynamicExtendsTokenParserTest extends TestCase
     {
         $filesystemLoader = $this->createMock(ContaoFilesystemLoader::class);
         $filesystemLoader
-            ->method('getDynamicParent')
+            ->method('getAllDynamicParentsByThemeSlug')
             ->willReturnCallback(
                 function (string $name, string $path) {
                     $this->assertSame('/path/to/the/template.html.twig', $path);
@@ -49,7 +49,7 @@ class DynamicExtendsTokenParserTest extends TestCase
                     ];
 
                     if (null !== ($resolved = $hierarchy[$name] ?? null)) {
-                        return $resolved;
+                        return ['' => $resolved];
                     }
 
                     throw new \LogicException('Template not found in hierarchy.');
@@ -67,14 +67,14 @@ class DynamicExtendsTokenParserTest extends TestCase
         );
 
         $tokenStream = (new Lexer($environment))->tokenize($source);
-        $serializedParentNode = (new Parser($environment))->parse($tokenStream)->getNode('parent');
+        $parentNode = (new Parser($environment))->parse($tokenStream)->getNode('parent');
 
         foreach ($expectedStrings as $expectedString) {
-            $this->assertStringContainsString($expectedString, (string) $serializedParentNode);
+            $this->assertStringContainsString($expectedString, (string) $parentNode);
         }
     }
 
-    public function provideSources(): \Generator
+    public static function provideSources(): iterable
     {
         yield 'regular extend' => [
             "{% extends '@Foo/bar.html.twig' %}",
@@ -112,8 +112,8 @@ class DynamicExtendsTokenParserTest extends TestCase
     {
         $filesystemLoader = $this->createMock(ContaoFilesystemLoader::class);
         $filesystemLoader
-            ->method('getDynamicParent')
-            ->with('foo')
+            ->method('getAllDynamicParentsByThemeSlug')
+            ->with('foo', $this->anything())
             ->willThrowException(new \LogicException('Template not found in hierarchy.'))
         ;
 
@@ -153,26 +153,21 @@ class DynamicExtendsTokenParserTest extends TestCase
         $parser = new Parser($environment);
 
         $this->expectException(SyntaxError::class);
-        $this->expectExceptionMessage($expectedException);
+        $this->expectExceptionMessageMatches($expectedException);
 
         $parser->parse($tokenStream);
     }
 
-    public function provideSourcesWithErrors(): \Generator
+    public static function provideSourcesWithErrors(): iterable
     {
         yield 'extend from within a block' => [
             "{% block b %}{% extends '@Foo/bar.html.twig' %}{% endblock %}",
-            'Cannot use "extends" in a block.',
+            '/^Cannot use "extends" in a block/',
         ];
 
         yield 'extend from within macro' => [
             "{% macro m() %}{% extends '@Foo/bar.html.twig' %}{% endmacro %}",
-            'Cannot use "extends" in a macro.',
-        ];
-
-        yield 'multiple extends' => [
-            "{% extends '@Foo/bar1.html.twig' %}{% extends '@Foo/bar2.html.twig' %}",
-            'Multiple extends tags are forbidden.',
+            '/^Cannot use "extends" in a macro/',
         ];
     }
 }

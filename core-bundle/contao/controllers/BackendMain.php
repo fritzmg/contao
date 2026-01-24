@@ -74,7 +74,7 @@ class BackendMain extends Backend
 				'do' => 'login',
 				'act' => 'edit',
 				'id' => $user->id,
-				'ref' => $container->get('request_stack')->getCurrentRequest()->attributes->get('_contao_referer_id'),
+				'ref' => Input::get('ref') ?: $container->get('request_stack')->getCurrentRequest()->attributes->get('_contao_referer_id'),
 			));
 
 			$this->redirect($strUrl);
@@ -169,7 +169,7 @@ class BackendMain extends Backend
 			$formatter = new DateTimeFormatter(System::getContainer()->get('translator'));
 			$diff = $formatter->formatDiff(new \DateTime(date('Y-m-d H:i:s', $user->lastLogin)), new \DateTime());
 
-			$objTemplate->loginMsg = sprintf(
+			$objTemplate->loginMsg = \sprintf(
 				$GLOBALS['TL_LANG']['MSC']['lastLogin'][1],
 				'<time title="' . Date::parse(Config::get('datimFormat'), $user->lastLogin) . '">' . $diff . '</time>'
 			);
@@ -182,7 +182,7 @@ class BackendMain extends Backend
 		$objTemplate->recordOfTable = StringUtil::specialchars(str_replace("'", "\\'", $GLOBALS['TL_LANG']['MSC']['recordOfTable']));
 		$objTemplate->systemMessages = $GLOBALS['TL_LANG']['MSC']['systemMessages'];
 		$objTemplate->shortcuts = $GLOBALS['TL_LANG']['MSC']['shortcuts'][0];
-		$objTemplate->shortcutsLink = sprintf($GLOBALS['TL_LANG']['MSC']['shortcuts'][1], 'https://to.contao.org/docs/shortcuts');
+		$objTemplate->shortcutsLink = \sprintf($GLOBALS['TL_LANG']['MSC']['shortcuts'][1], 'https://to.contao.org/docs/shortcuts');
 		$objTemplate->editElement = StringUtil::specialchars($GLOBALS['TL_LANG']['MSC']['editElement']);
 
 		return $objTemplate->parse();
@@ -228,12 +228,12 @@ class BackendMain extends Backend
 
 		$data['theme'] = Backend::getTheme();
 		$data['language'] = $GLOBALS['TL_LANGUAGE'];
-		$data['title'] = StringUtil::specialchars(strip_tags($data['title'] ?? ''));
+		$data['title'] = StringUtil::specialchars(preg_replace('/^\s*›\s*|\s*›\s*$/u', '', strip_tags(preg_replace('/<span.*?>/', ' › ', $data['title'] ?? ''))));
 		$data['host'] = Backend::getDecodedHostname();
 		$data['charset'] = System::getContainer()->getParameter('kernel.charset');
 		$data['home'] = $GLOBALS['TL_LANG']['MSC']['home'];
 		$data['isPopup'] = Input::get('popup');
-		$data['learnMore'] = sprintf($GLOBALS['TL_LANG']['MSC']['learnMore'], '<a href="https://contao.org" target="_blank" rel="noreferrer noopener">contao.org</a>');
+		$data['learnMore'] = \sprintf($GLOBALS['TL_LANG']['MSC']['learnMore'], '<a href="https://contao.org" target="_blank" rel="noreferrer noopener">contao.org</a>');
 
 		$twig = $container->get('twig');
 

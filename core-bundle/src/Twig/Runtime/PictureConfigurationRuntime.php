@@ -31,8 +31,8 @@ final class PictureConfigurationRuntime implements RuntimeExtensionInterface
     /**
      * Creates a picture configuration from an array.
      *
-     * This is intended to be used from within templates where programmatic
-     * building is not available.
+     * This is intended to be used from within templates where programmatic building
+     * is not available.
      */
     public function fromArray(array $config): PictureConfiguration
     {
@@ -46,7 +46,7 @@ final class PictureConfigurationRuntime implements RuntimeExtensionInterface
             function (array $itemConfig): PictureConfigurationItem {
                 $sizeItem = $this->createPictureConfigurationItem($itemConfig);
 
-                if (!empty($itemConfig)) {
+                if ([] !== $itemConfig) {
                     $this->throwInvalidArgumentException($itemConfig, 'items');
                 }
 
@@ -60,7 +60,7 @@ final class PictureConfigurationRuntime implements RuntimeExtensionInterface
         // Apply remaining data to root config
         $this->applyConfiguration($pictureConfiguration, $config);
 
-        if (!empty($config)) {
+        if ([] !== $config) {
             $this->throwInvalidArgumentException($config);
         }
 
@@ -112,6 +112,6 @@ final class PictureConfigurationRuntime implements RuntimeExtensionInterface
             $keys = array_map(static fn (string $v): string => "$prefix.$v", $keys);
         }
 
-        throw new \InvalidArgumentException(sprintf('Could not map picture configuration key(s) "%s".', implode('", "', $keys)));
+        throw new \InvalidArgumentException(\sprintf('Could not map picture configuration key(s) "%s".', implode('", "', $keys)));
     }
 }

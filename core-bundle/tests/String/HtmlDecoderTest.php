@@ -63,8 +63,8 @@ class HtmlDecoderTest extends TestCase
      */
     public function testInputEncodedToPlainText(string $source, string $expected, bool $removeInsertTags = false): void
     {
-        $parser = new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class));
-        $parser->addSubscription(new InsertTagSubscription($this->createDateInsertTag(), '__invoke', 'date', null, true, true));
+        $parser = new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class));
+        $parser->addSubscription(new InsertTagSubscription($this->createDateInsertTag(), '__invoke', 'date', null, true, false));
         $parser->addSubscription(new InsertTagSubscription(new LegacyInsertTag(System::getContainer()), '__invoke', 'email', null, true, false));
 
         $htmlDecoder = new HtmlDecoder($parser);
@@ -81,7 +81,7 @@ class HtmlDecoderTest extends TestCase
         $this->assertSame($expected, $htmlDecoder->inputEncodedToPlainText($inputEncoded));
     }
 
-    public function getInputEncodedToPlainText(): \Generator
+    public static function getInputEncodedToPlainText(): iterable
     {
         yield ['foobar', 'foobar'];
         yield ['foo{{email::test@example.com}}bar', 'footest@example.combar'];
@@ -101,8 +101,8 @@ class HtmlDecoderTest extends TestCase
      */
     public function testHtmlToPlainText(string $source, string $expected, bool $removeInsertTags = false): void
     {
-        $parser = new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class), $this->createMock(RequestStack::class));
-        $parser->addSubscription(new InsertTagSubscription($this->createDateInsertTag(), '__invoke', 'date', null, true, true));
+        $parser = new InsertTagParser($this->createMock(ContaoFramework::class), $this->createMock(LoggerInterface::class), $this->createMock(FragmentHandler::class));
+        $parser->addSubscription(new InsertTagSubscription($this->createDateInsertTag(), '__invoke', 'date', null, true, false));
         $parser->addSubscription(new InsertTagSubscription(new LegacyInsertTag(System::getContainer()), '__invoke', 'email', null, true, false));
         $parser->addSubscription(new InsertTagSubscription(new LegacyInsertTag(System::getContainer()), '__invoke', 'br', null, true, false));
 
@@ -118,7 +118,7 @@ class HtmlDecoderTest extends TestCase
         $this->assertSame($expected, $htmlDecoder->htmlToPlainText($inputXssStripped, $removeInsertTags));
     }
 
-    public function getHtmlToPlainText(): \Generator
+    public function getHtmlToPlainText(): iterable
     {
         yield from $this->getInputEncodedToPlainText();
 

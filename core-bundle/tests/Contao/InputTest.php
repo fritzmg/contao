@@ -129,7 +129,6 @@ class InputTest extends TestCase
 
         $this->assertSame($source, Input::postUnsafeRaw('key'));
 
-        $this->expectDeprecation('%sstripTags() without setting allowed tags and allowed attributes has been deprecated%s');
         $this->assertSame($expected, Input::postHtml('key', true));
         $this->assertSame($expectedEncoded, Input::postHtml('key'));
     }
@@ -147,8 +146,8 @@ class InputTest extends TestCase
 
         // html_entity_decode simulates the browser here
         $_POST = [
-            'decoded' => html_entity_decode($specialchars(null, $expected)),
-            'encoded' => html_entity_decode($specialchars(null, $expectedEncoded)),
+            'decoded' => html_entity_decode($specialchars(null, $expected), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5),
+            'encoded' => html_entity_decode($specialchars(null, $expectedEncoded), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5),
         ];
 
         Config::set('allowedTags', '');
@@ -156,8 +155,6 @@ class InputTest extends TestCase
 
         $this->assertSame($expected, Input::post('decoded', true));
         $this->assertSame($expectedEncoded, Input::post('encoded'));
-
-        $this->expectDeprecation('%sstripTags() without setting allowed tags and allowed attributes has been deprecated%s');
 
         $this->assertSame($expected, Input::postHtml('decoded', true));
         $this->assertSame($expectedEncoded, Input::postHtml('encoded'));
@@ -168,8 +165,8 @@ class InputTest extends TestCase
      */
     public function testEncodesInsertTags(): void
     {
-        $source = '{{ foo }}';
-        $encoded = '&#123;&#123; foo &#125;&#125;';
+        $source = ' {{ foo }} { bar } ';
+        $encoded = ' &#123;&#123; foo &#125;&#125; { bar &#125; ';
 
         $_GET = $_POST = $_COOKIE = [
             'key' => $source,
@@ -199,7 +196,7 @@ class InputTest extends TestCase
         $this->assertSame($encoded, Input::postHtml('key'));
     }
 
-    public function encodeInputProvider(): \Generator
+    public static function encodeInputProvider(): iterable
     {
         yield [
             'foo',
@@ -327,14 +324,14 @@ class InputTest extends TestCase
      *
      * @group legacy
      */
-    public function testEncodeNoneMode(string $source, string $expected, string|null $expectedEncoded = null): void
+    public function testEncodeNoneMode(string $source, string $expected, string|null $expectedEncoded = null, string|null $expectedEncodedDouble = null): void
     {
         $expectedEncoded ??= $expected;
 
         $this->assertSame($expected, Input::encodeInput($source, InputEncodingMode::encodeNone, false));
         $this->assertSame($expectedEncoded, Input::encodeInput($source, InputEncodingMode::encodeNone));
         $this->assertSame($expected.$expected, Input::encodeInput($source.$source, InputEncodingMode::encodeNone, false));
-        $this->assertSame($expectedEncoded.$expectedEncoded, Input::encodeInput($source.$source, InputEncodingMode::encodeNone));
+        $this->assertSame($expectedEncodedDouble ?? $expectedEncoded.$expectedEncoded, Input::encodeInput($source.$source, InputEncodingMode::encodeNone));
 
         System::getContainer()->set('request_stack', $stack = new RequestStack());
         $stack->push(new Request([], ['key' => $source]));
@@ -349,16 +346,18 @@ class InputTest extends TestCase
         $this->assertSame($expectedEncoded, Input::postRaw('key'));
     }
 
-    public function encodeNoneModeProvider(): \Generator
+    public static function encodeNoneModeProvider(): iterable
     {
         yield ['', ''];
         yield ['foo', 'foo'];
         yield ['\X \0 \X', '\X &#92;0 \X'];
         yield ["a\rb\r\nc\n\rd\ne", "a\nb\nc\n\nd\ne"];
-        yield ['{}', '{}'];
+        yield ['{}', '{}', '&#123;&#125;', '&#123;}{&#125;'];
         yield ['{{}}', '{{}}', '&#123;&#123;&#125;&#125;'];
-        yield ['{{{}}}', '{{{}}}', '&#123;&#123;{&#125;&#125;}'];
+        yield ['{{{}}}', '{{{}}}', '&#123;&#123;{&#125;&#125;&#125;', '&#123;&#123;{&#125;&#125;}&#123;&#123;{&#125;&#125;&#125;'];
         yield ['{{{{}}}}', '{{{{}}}}', '&#123;&#123;&#123;&#123;&#125;&#125;&#125;&#125;'];
+        yield ['{ start {and} end }', '{ start {and} end }', '&#123; start {and} end &#125;', '&#123; start {and} end }{ start {and} end &#125;'];
+        yield ["\n\t { foo }\n\t ", "\n\t { foo }\n\t ", "\n\t &#123; foo &#125;\n\t ", "\n\t &#123; foo }\n\t \n\t { foo &#125;\n\t "];
         yield ["\0", "\u{FFFD}"];
         yield ["\x80", "\u{FFFD}"];
         yield ["\xFF", "\u{FFFD}"];
@@ -411,7 +410,7 @@ class InputTest extends TestCase
         $this->assertSame($expectedEncoded, Input::postHtml('key', true));
     }
 
-    public function stripTagsProvider(): \Generator
+    public static function stripTagsProvider(): iterable
     {
         yield 'Encodes tags' => [
             'Text <with> tags',
@@ -695,18 +694,14 @@ class InputTest extends TestCase
     }
 
     /**
-     * @group legacy
-     *
      * @dataProvider stripTagsNoTagsAllowedProvider
      */
     public function testStripTagsNoTagsAllowed(string $source, string $expected): void
     {
-        $this->expectDeprecation('%sstripTags() without setting allowed tags and allowed attributes has been deprecated%s');
-
         $this->assertSame($expected, Input::stripTags($source));
     }
 
-    public function stripTagsNoTagsAllowedProvider(): \Generator
+    public static function stripTagsNoTagsAllowedProvider(): iterable
     {
         yield 'Encodes tags' => [
             'Text <with> tags',
@@ -734,9 +729,6 @@ class InputTest extends TestCase
         $this->assertSame($html, Input::stripTags($html, '<span>', serialize([['key' => '*', 'value' => '*']])));
     }
 
-    /**
-     * @group legacy
-     */
     public function testStripTagsNoAttributesAllowed(): void
     {
         $html = "<dIv class=gets-normalized bar-foo-something = 'keep'><spAN class=gets-normalized bar-foo-something = 'keep'>foo</SPan></DiV><notallowed></notallowed>";
@@ -747,17 +739,11 @@ class InputTest extends TestCase
         $this->assertSame($expected, Input::stripTags($html, '<div><span>', serialize([])));
         $this->assertSame($expected, Input::stripTags($html, '<div><span>', serialize(null)));
 
-        $this->expectDeprecation('%sstripTags() without setting allowed tags and allowed attributes has been deprecated%s');
         $this->assertSame($expected, Input::stripTags($html, '<div><span>'));
     }
 
-    /**
-     * @group legacy
-     */
     public function testStripTagsScriptAllowed(): void
     {
-        $this->expectDeprecation('%sstripTags() without setting allowed tags and allowed attributes has been deprecated%s');
-
         $this->assertSame(
             '<script>alert(foo > bar);</script>foo &#62; bar',
             Input::stripTags('<script>alert(foo > bar);</script>foo > bar', '<div><span><script>'),
@@ -793,7 +779,7 @@ class InputTest extends TestCase
         $this->assertSame($expected, $simpleTokenParser->parse($html, $tokens));
     }
 
-    public function simpleTokensWithHtmlProvider(): \Generator
+    public static function simpleTokensWithHtmlProvider(): iterable
     {
         yield 'Token only' => [
             'foo##foo##baz',

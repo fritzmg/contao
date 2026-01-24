@@ -2,6 +2,14 @@
 
 ## Version 4.* to 5.0
 
+### postDownload hook
+
+The `postDownload` hook is only triggered in the legacy download content elements.
+
+To apply business logic to all file responses, use an event listener instead that listens for the `ResponseEvent` event
+and checks whether the response is a `BinaryFileResponse`. The event listener works for both the legacy elements and the
+new Twig-based download elements.
+
 ### Contao 3 theme icons
 
 The old `.gif` images that were used for the back end theme in Contao 3 have been removed. Use the `.svg` icons instead.
@@ -277,7 +285,8 @@ they are Twig-only and also follow the new naming scheme:
 
 ### Show to guests only
 
-The "show to guests only" function has been removed. Use the "protect page" function instead.
+The "show to guests only" function for articles, content elements and modules has been removed. Use the "protect"
+function instead.
 
 ### tl_content.ptable
 
@@ -366,7 +375,7 @@ instead.
 
 ### Template changes
 
-The items in the `ce_list` and `ce_table` templates no longer consist of an associative array containing the item‘s CSS
+The items in the `ce_list` and `ce_table` templates no longer consist of an associative array containing the item's CSS
 class and content. Instead, it will only be the content.
 
 ```php
@@ -503,3 +512,11 @@ The back end widgets `pageSelector` and `fileSelector` have been removed. Use th
 ### Public folder
 
 The public folder is now called `public` by default. It can be renamed in the `composer.json` file.
+
+### Basic entities
+
+[Basic entities][1] such as `[-]` or `[nbsp]` are no longer converted automatically when a page is rendered. Instead,
+you have to add `'basicEntities' => true` to the `eval` section of the fields you want to use them in, so they are
+converted when a record is saved in the back end.
+
+[1]: https://docs.contao.org/manual/en/article-management/insert-tags/#basic-entities

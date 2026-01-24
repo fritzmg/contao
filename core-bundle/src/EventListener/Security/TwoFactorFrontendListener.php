@@ -47,8 +47,8 @@ class TwoFactorFrontendListener
     }
 
     /**
-     * If we are in the front end, make sure the user completes the two-factor login process,
-     * or sets up the two-factor authentication if it is enforced in the root page.
+     * If we are in the front end, make sure the user completes the two-factor login
+     * process, or sets up the two-factor authentication if it is enforced in the root page.
      */
     public function __invoke(RequestEvent $event): void
     {
@@ -78,8 +78,10 @@ class TwoFactorFrontendListener
                 throw new ForwardPageNotFoundException('No two-factor authentication page found');
             }
 
+            $currentPage = $request->attributes->get('pageModel');
+
             // Redirect to two-factor page
-            if ($rootPage->id !== $twoFactorPage->id) {
+            if ($currentPage?->id !== $twoFactorPage->id) {
                 $event->setResponse(new RedirectResponse($this->urlGenerator->generate($twoFactorPage, [], UrlGeneratorInterface::ABSOLUTE_URL)));
             }
 

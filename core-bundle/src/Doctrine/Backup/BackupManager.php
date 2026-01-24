@@ -36,7 +36,7 @@ class BackupManager
         $now = $dateTime ?? new \DateTime('now');
         $now->setTimezone(new \DateTimeZone('UTC'));
 
-        $filename = sprintf('backup__%s.sql.gz', $now->format(Backup::DATETIME_FORMAT));
+        $filename = \sprintf('backup__%s.sql.gz', $now->format(Backup::DATETIME_FORMAT));
 
         return new Backup($filename);
     }
@@ -191,7 +191,10 @@ class BackupManager
             $data = deflate_add($deflateContext, $data, ZLIB_NO_FLUSH);
         }
 
-        @fwrite($fileHandle, $data);
+        if (false === fwrite($fileHandle, $data)) {
+            throw new \RuntimeException('Could not write backup data.');
+        }
+
         fflush($fileHandle);
     }
 
@@ -200,8 +203,8 @@ class BackupManager
      */
     private function finishWriting(Backup $backup, $fileHandle, \DeflateContext|null $deflateContext): void
     {
-        if ($deflateContext) {
-            fwrite($fileHandle, deflate_add($deflateContext, '', ZLIB_FINISH));
+        if ($deflateContext && false === fwrite($fileHandle, deflate_add($deflateContext, '', ZLIB_FINISH))) {
+            throw new \RuntimeException('Could not write backup data.');
         }
 
         $this->backupsStorage->writeStream($backup->getFilename(), $fileHandle);
@@ -215,7 +218,7 @@ class BackupManager
         $backup = $config->getBackup();
 
         if (!$this->backupsStorage->fileExists($backup->getFilename())) {
-            throw new BackupManagerException(sprintf('Dump "%s" does not exist.', $backup->getFilename()));
+            throw new BackupManagerException(\sprintf('Dump "%s" does not exist.', $backup->getFilename()));
         }
 
         $tmpFile = (new Filesystem())->tempnam(sys_get_temp_dir(), 'ctobckupmgr');

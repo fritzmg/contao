@@ -12,58 +12,68 @@ declare(strict_types=1);
 
 namespace Contao\CoreBundle\Security\Voter\DataContainer;
 
-use Contao\ArticleModel;
-use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Security\ContaoCorePermissions;
-use Contao\CoreBundle\Security\DataContainer\ReadAction;
+use Doctrine\DBAL\Connection;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\AccessDecisionManagerInterface;
-use Symfony\Component\Security\Core\Authorization\Voter\CacheableVoterInterface;
-use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
 /**
  * @internal
  */
-class ArticleContentVoter implements VoterInterface, CacheableVoterInterface
+class ArticleContentVoter extends AbstractDynamicPtableVoter
 {
+    /**
+     * @var array<int, array{id: int, type: string}|null>
+     */
+    private array $pageMap = [];
+
     public function __construct(
-        private readonly ContaoFramework $framework,
         private readonly AccessDecisionManagerInterface $accessDecisionManager,
+        private readonly Connection $connection,
     ) {
+        parent::__construct($connection);
     }
 
-    public function supportsAttribute(string $attribute): bool
+    public function reset(): void
     {
-        return ContaoCorePermissions::DC_PREFIX.'tl_content' === $attribute;
+        parent::reset();
+
+        $this->pageMap = [];
     }
 
-    public function supportsType(string $subjectType): bool
+    protected function getTable(): string
     {
-        return ReadAction::class === $subjectType;
+        return 'tl_content';
+    }
+
+    protected function hasAccessToRecord(TokenInterface $token, string $table, int $id): bool
+    {
+        if ('tl_article' !== $table) {
+            return true;
+        }
+
+        if (!$this->accessDecisionManager->decide($token, [ContaoCorePermissions::USER_CAN_ACCESS_MODULE], 'article')) {
+            return false;
+        }
+
+        $page = $this->getPage($id);
+
+        return $page
+            && $this->accessDecisionManager->decide($token, [ContaoCorePermissions::USER_CAN_ACCESS_PAGE], (int) $page['id'])
+            && $this->accessDecisionManager->decide($token, [ContaoCorePermissions::USER_CAN_EDIT_ARTICLES], (int) $page['id'])
+            && $this->accessDecisionManager->decide($token, [ContaoCorePermissions::USER_CAN_ACCESS_PAGE_TYPE], $page['type']);
     }
 
     /**
-     * This only implements read access permission on tl_content
-     * to disable the "children" operation on tl_article. It should be extended
-     * to also check all other permissions on tl_content.
+     * @return array{id: int, type: string}|null
      */
-    public function vote(TokenInterface $token, $subject, array $attributes): int
+    private function getPage(int $articleId): array|null
     {
-        if (!$subject instanceof ReadAction || 'tl_article' !== ($subject->getCurrent()['ptable'] ?? null)) {
-            return self::ACCESS_ABSTAIN;
+        if (!\array_key_exists($articleId, $this->pageMap)) {
+            $record = $this->connection->fetchAssociative('SELECT id, type FROM tl_page WHERE id=(SELECT pid FROM tl_article WHERE id=?)', [$articleId]);
+            $this->pageMap[$articleId] = false !== $record ? $record : null;
         }
 
-        if (!array_filter($attributes, $this->supportsAttribute(...))) {
-            return self::ACCESS_ABSTAIN;
-        }
-
-        $articleAdapter = $this->framework->getAdapter(ArticleModel::class);
-        $articleModel = $articleAdapter->findById($subject->getCurrentPid());
-
-        if ($articleModel && !$this->accessDecisionManager->decide($token, [ContaoCorePermissions::USER_CAN_EDIT_ARTICLES], $articleModel->pid)) {
-            return self::ACCESS_DENIED;
-        }
-
-        return self::ACCESS_ABSTAIN;
+        return $this->pageMap[$articleId];
     }
 }

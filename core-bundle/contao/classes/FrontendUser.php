@@ -33,6 +33,7 @@ class FrontendUser extends User
 	/**
 	 * Name of the current cookie
 	 * @var string
+	 * @deprecated Deprecated since Contao 5.0, to be removed in Contao 6.
 	 */
 	protected $strCookie = 'FE_USER_AUTH';
 
@@ -180,7 +181,7 @@ class FrontendUser extends User
 		{
 			if (!is_numeric($v))
 			{
-				$this->$k = StringUtil::deserialize($v);
+				$this->arrData[$k] = StringUtil::deserialize($v);
 			}
 		}
 

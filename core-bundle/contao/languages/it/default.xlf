@@ -373,6 +373,12 @@
         <source>There is no administrator e-mail address set, please contact the site administrator.</source>
         <target>Non è stato impostato alcun indirizzo e-mail per l'amministratore, contattare l'amministratore del sito.</target>
       </trans-unit>
+      <trans-unit id="ERR.personalDataPassword">
+        <source>There is at least one &quot;personal data&quot; module that allows the password to be changed. This is a security weakness and will no longer work in Contao 6. Use the &quot;change password&quot; module instead.</source>
+      </trans-unit>
+      <trans-unit id="ERR.copyUnique">
+        <source>Element ID %d cannot be inserted here because it conflicts with an existing element.</source>
+      </trans-unit>
       <trans-unit id="SEC.question1">
         <source>Please add %d and %d.</source>
         <target>Somma %d a %d.</target>
@@ -435,9 +441,11 @@
       </trans-unit>
       <trans-unit id="CTE.description_list.0">
         <source>Description list</source>
+        <target>Elenco delle descrizioni</target>
       </trans-unit>
       <trans-unit id="CTE.description_list.1">
         <source>Generates a description list with terms and details.</source>
+        <target>Genera un elenco di descrizioni con termini e dettagli.</target>
       </trans-unit>
       <trans-unit id="CTE.table.0">
         <source>Table</source>
@@ -2381,9 +2389,11 @@
       </trans-unit>
       <trans-unit id="MSC.reauthenticate">
         <source>Please enter your password to verify your identity.</source>
+        <target>Inserire la password per verificare la propria identità.</target>
       </trans-unit>
       <trans-unit id="MSC.verify">
         <source>Verify</source>
+        <target>Verifica</target>
       </trans-unit>
       <trans-unit id="MSC.confirmation">
         <source>Confirmation</source>
@@ -2489,16 +2499,13 @@
         <source>Print this page</source>
         <target>Stampa la pagina</target>
       </trans-unit>
-      <trans-unit id="MSC.printAsPdf">
-        <source>Save article as PDF</source>
-        <target>Salva l'articolo in PDF</target>
-      </trans-unit>
       <trans-unit id="MSC.facebookShare">
         <source>Share on Facebook</source>
         <target>Condividi in Facebook</target>
       </trans-unit>
       <trans-unit id="MSC.twitterShare">
         <source>Share on X (formerly Twitter)</source>
+        <target>Condividi su X (ex Twitter)</target>
       </trans-unit>
       <trans-unit id="MSC.pleaseWait">
         <source>Please wait</source>
@@ -2579,6 +2586,9 @@
       <trans-unit id="MSC.invalidTokenUrl">
         <source>The link you were trying to open could not be verified. If you have clicked the link yourself or have received it by a trustworthy person, you can confirm the process below.</source>
         <target>Il link che stai tentando di visitare non può essere verificato. Se proprio tu hai cliccato su questo link o se lo hai ricevuto da una persona di fiducia, potrai confermare la procedura di seguito.</target>
+      </trans-unit>
+      <trans-unit id="MSC.tooManyPasswordResetAttempts">
+        <source>You have tried to reset your password too many times. Please try again in 15 minutes.</source>
       </trans-unit>
       <trans-unit id="MSC.versionConflict">
         <source>Version conflict</source>
@@ -2811,6 +2821,9 @@
       <trans-unit id="MSC.noSerpPreview">
         <source>The preview URL cannot be generated, because the route has mandatory parameters.</source>
         <target>L'URL di anteprima non può essere generato, perché il percorso ha dei parametri obbligatori.</target>
+      </trans-unit>
+      <trans-unit id="MSC.noSerpPreviewPost">
+        <source>The preview URL cannot be generated, because the form has errors.</source>
       </trans-unit>
       <trans-unit id="MSC.unknownOption">
         <source>Unknown option: %s</source>

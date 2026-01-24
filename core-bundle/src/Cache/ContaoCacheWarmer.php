@@ -125,8 +125,14 @@ class ContaoCacheWarmer implements CacheWarmerInterface
         foreach ($this->locales as $language) {
             $files = $this->findLanguageFiles($language);
 
+            // findLanguageFiles might return an empty array instead of a Traversable object
+            // which we cannot pass to iterator_to_array in PHP 8.1 directly.
+            if ($files instanceof \Traversable) {
+                $files = iterator_to_array($files);
+            }
+
             foreach ($files as $file) {
-                $name = substr($file->getBasename(), 0, -4);
+                $name = $file->getFilenameWithoutExtension();
 
                 if (isset($processed[$language][$name])) {
                     continue;
@@ -134,14 +140,8 @@ class ContaoCacheWarmer implements CacheWarmerInterface
 
                 $processed[$language][$name] = true;
 
-                $subfiles = $this->finder
-                    ->findIn(Path::join('languages', $language))
-                    ->files()
-                    ->name("/^$name\\.(php|xlf)$/")
-                ;
-
                 $dumper->dump(
-                    iterator_to_array($subfiles),
+                    array_filter($files, static fn (SplFileInfo $f): bool => $f->getFilenameWithoutExtension() === $name),
                     Path::join('languages', $language, "$name.php"),
                     ['type' => $language],
                 );
@@ -181,7 +181,7 @@ class ContaoCacheWarmer implements CacheWarmerInterface
         // Cache the available Contao language files (see #6454)
         $this->filesystem->dumpFile(
             Path::join($cacheDir, 'contao/config/available-language-files.php'),
-            sprintf("<?php\n\nreturn %s;\n", var_export($processed, true)),
+            \sprintf("<?php\n\nreturn %s;\n", var_export($processed, true)),
         );
     }
 
@@ -206,13 +206,14 @@ class ContaoCacheWarmer implements CacheWarmerInterface
 
             $this->filesystem->dumpFile(
                 Path::join($cacheDir, 'contao/sql', "$table.php"),
-                sprintf(
-                    "<?php\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n\$this->blnIsDbTable = true;\n",
-                    sprintf('$this->arrMeta = %s;', var_export($extract->getMeta(), true)),
-                    sprintf('$this->arrFields = %s;', var_export($extract->getFields(), true)),
-                    sprintf('$this->arrUniqueFields = %s;', var_export($extract->getUniqueFields(), true)),
-                    sprintf('$this->arrKeys = %s;', var_export($extract->getKeys(), true)),
-                    sprintf('$this->arrRelations = %s;', var_export($extract->getRelations(), true)),
+                \sprintf(
+                    "<?php\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n\$this->blnIsDbTable = true;\n",
+                    \sprintf('$this->arrMeta = %s;', var_export($extract->getMeta(), true)),
+                    \sprintf('$this->arrFields = %s;', var_export($extract->getFields(), true)),
+                    \sprintf('$this->arrUniqueFields = %s;', var_export($extract->getUniqueFields(), true)),
+                    \sprintf('$this->arrKeys = %s;', var_export($extract->getKeys(), true)),
+                    \sprintf('$this->arrRelations = %s;', var_export($extract->getRelations(), true)),
+                    \sprintf('$this->arrEnums = %s;', var_export($extract->getEnums(), true)),
                 ),
             );
         }
@@ -234,7 +235,7 @@ class ContaoCacheWarmer implements CacheWarmerInterface
 
         $this->filesystem->dumpFile(
             Path::join($cacheDir, 'contao/config/templates.php'),
-            sprintf("<?php\n\nreturn %s;\n", var_export($mapper, true)),
+            \sprintf("<?php\n\nreturn %s;\n", var_export($mapper, true)),
         );
     }
 
@@ -242,7 +243,7 @@ class ContaoCacheWarmer implements CacheWarmerInterface
     {
         $this->filesystem->dumpFile(
             Path::join($cacheDir, 'contao/config/column-types.php'),
-            sprintf("<?php\n\nreturn %s;\n", var_export(Model::getColumnCastTypesFromDca(), true)),
+            \sprintf("<?php\n\nreturn %s;\n", var_export(Model::getColumnCastTypesFromDca(), true)),
         );
     }
 

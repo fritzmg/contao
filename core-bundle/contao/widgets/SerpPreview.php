@@ -34,6 +34,11 @@ class SerpPreview extends Widget
 	 */
 	public function generate()
 	{
+		if (Input::isPost())
+		{
+			return '<div class="serp-preview"><p class="tl_info">' . $GLOBALS['TL_LANG']['MSC']['noSerpPreviewPost'] . '</p></div>';
+		}
+
 		/** @var class-string<Model> $class */
 		$class = Model::getClassFromTable($this->strTable);
 		$model = $class::findById($this->activeRecord->id);
@@ -87,7 +92,7 @@ class SerpPreview extends Widget
 
 		if ($titleTag = $this->getTitleTag($model))
 		{
-			$title = StringUtil::substr(sprintf($titleTag, $title), 64);
+			$title = StringUtil::substr(\sprintf($titleTag, $title), 64);
 		}
 
 		return <<<EOT
@@ -152,7 +157,7 @@ class SerpPreview extends Widget
 		$placeholder = bin2hex(random_bytes(10));
 
 		// Pass a detached clone with the alias set to the placeholder
-		$tempModel = $model->cloneOriginal();
+		$tempModel = $model->cloneDetached();
 		$tempModel->origAlias = $tempModel->$aliasField;
 		$tempModel->$aliasField = $placeholder;
 		$tempModel->preventSaving(false);

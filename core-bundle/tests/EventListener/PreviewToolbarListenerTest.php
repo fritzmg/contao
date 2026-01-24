@@ -54,7 +54,7 @@ class PreviewToolbarListenerTest extends TestCase
         $this->assertSame($expected, $response->getContent());
     }
 
-    public function getInjectToolbarData(): \Generator
+    public static function getInjectToolbarData(): iterable
     {
         yield [
             '<html><head></head><body></body></html>',
@@ -70,7 +70,6 @@ class PreviewToolbarListenerTest extends TestCase
     public function testInjectsTheToolbarIntoTheResponse(): void
     {
         $response = new Response('<html><head></head><body></body></html>');
-        $response->headers->set('Content-Type', 'text/html; charset=utf-8');
 
         $event = new ResponseEvent(
             $this->createMock(HttpKernelInterface::class),
@@ -220,7 +219,7 @@ class PreviewToolbarListenerTest extends TestCase
         $this->assertSame('<html><head></head><body></body></html>', $response->getContent());
     }
 
-    public function getDisallowedStatusCodes(): \Generator
+    public static function getDisallowedStatusCodes(): iterable
     {
         yield [100, true];
         yield [301, true];
@@ -261,7 +260,7 @@ class PreviewToolbarListenerTest extends TestCase
         $this->assertSame("<html><head></head><body>\nCONTAO\n</body></html>", $response->getContent());
     }
 
-    public function getAllowedStatusCodes(): \Generator
+    public static function getAllowedStatusCodes(): iterable
     {
         yield [200, true];
         yield [201, true];

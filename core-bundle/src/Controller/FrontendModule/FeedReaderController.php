@@ -62,7 +62,7 @@ class FeedReaderController extends AbstractFrontendModuleController
                 );
             } catch (\Exception $exception) {
                 $feed = null;
-                $this->logger->error(sprintf('Could not read feed %s: %s', $url, $exception->getMessage()));
+                $this->logger->error(\sprintf('Could not read feed %s: %s', $url, $exception->getMessage()));
 
                 continue;
             }
@@ -88,7 +88,7 @@ class FeedReaderController extends AbstractFrontendModuleController
             ),
         );
 
-        usort($elements, static fn (array $a, array $b): int => $a['item']->getLastModified() <=> $b['item']->getLastModified());
+        usort($elements, static fn (array $a, array $b): int => $b['item']->getLastModified() <=> $a['item']->getLastModified());
 
         if ($model->perPage > 0) {
             $param = 'page_r'.$model->id;

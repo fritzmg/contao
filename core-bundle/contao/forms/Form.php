@@ -238,7 +238,7 @@ class Form extends Hybrid
 				}
 
 				$objWidget = new $strClass($arrData);
-				$objWidget->required = $objField->mandatory ? true : false;
+				$objWidget->required = $objField->mandatory;
 
 				// HOOK: load form field callback
 				if (isset($GLOBALS['TL_HOOKS']['loadFormField']) && \is_array($GLOBALS['TL_HOOKS']['loadFormField']))
@@ -492,7 +492,7 @@ class Form extends Hybrid
 			// Fallback to default subject
 			if (!$email->subject)
 			{
-				$email->subject = html_entity_decode(System::getContainer()->get('contao.insert_tag.parser')->replaceInline($this->subject), ENT_QUOTES, 'UTF-8');
+				$email->subject = html_entity_decode(System::getContainer()->get('contao.insert_tag.parser')->replaceInline($this->subject), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
 			}
 
 			// Send copy to sender
@@ -505,7 +505,7 @@ class Form extends Hybrid
 			if ($this->format == 'xml')
 			{
 				// Encode the values (see #6053)
-				array_walk_recursive($fields, static function (&$value) { $value = htmlspecialchars($value, ENT_QUOTES|ENT_SUBSTITUTE|ENT_XML1); });
+				array_walk_recursive($fields, static function (&$value) { $value = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_XML1); });
 
 				$objTemplate = new FrontendTemplate('form_xml');
 				$objTemplate->fields = $fields;

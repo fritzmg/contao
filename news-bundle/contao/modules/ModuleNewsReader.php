@@ -15,6 +15,7 @@ use Contao\CoreBundle\Exception\PageNotFoundException;
 use Contao\CoreBundle\Exception\RedirectResponseException;
 use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
 use Contao\CoreBundle\Util\UrlUtil;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
@@ -110,9 +111,6 @@ class ModuleNewsReader extends ModuleNews
 			$this->news_template = 'news_full';
 		}
 
-		$arrArticle = $this->parseArticle($objArticle);
-		$this->Template->articles = $arrArticle;
-
 		// Overwrite the page metadata (see #2853, #4955 and #87)
 		$responseContext = System::getContainer()->get('contao.routing.response_context_accessor')->getResponseContext();
 
@@ -167,6 +165,9 @@ class ModuleNewsReader extends ModuleNews
 			}
 		}
 
+		$arrArticle = $this->parseArticle($objArticle);
+		$this->Template->articles = $arrArticle;
+
 		$bundles = System::getContainer()->getParameter('kernel.bundles');
 
 		// HOOK: comments extension required
@@ -217,5 +218,10 @@ class ModuleNewsReader extends ModuleNews
 		$objConfig->moderate = $objArchive->moderate;
 
 		(new Comments())->addCommentsToTemplate($this->Template, $objConfig, 'tl_news', $objArticle->id, $arrNotifies);
+	}
+
+	public static function shouldPreload(string $type, PageModel $objPage, Request $request): bool
+	{
+		return $request->attributes->has('auto_item');
 	}
 }

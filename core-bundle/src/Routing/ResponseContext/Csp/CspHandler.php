@@ -114,7 +114,7 @@ final class CspHandler
         if (($sources = $this->getDirective($directive, $useFallback)) || !$autoIgnore) {
             $parser = new ContentSecurityPolicyParser();
             $existingValues = explode(' ', (string) $sources);
-            $newValues = array_unique(array_merge($existingValues, explode(' ', $source)));
+            $newValues = array_unique([...$existingValues, ...explode(' ', $source)]);
             $value = $parser->parseSourceList($newValues);
 
             $this->directives->setDirective($directive, $value);
@@ -192,12 +192,12 @@ final class CspHandler
         }
 
         // Still couldn't make it - we have to throw an exception now.
-        throw new \LogicException(sprintf('The generated Content Security Policy header exceeds %d bytes. It is very unlikely that your web server will be able to handle such a big header value. Check the policy and ensure it stays below %d bytes: %s', $this->maxHeaderLength, $this->maxHeaderLength, $headerValue));
+        throw new \LogicException(\sprintf('The generated Content Security Policy header exceeds %d bytes. It is very unlikely that your web server will be able to handle such a big header value. Check the policy and ensure it stays below %d bytes: %s', $this->maxHeaderLength, $this->maxHeaderLength, $headerValue));
     }
 
     private function logCspHeaderExceeded(int $headerLength, array $removedStyleSrc, array $removedScriptSrc): void
     {
-        $this->logger?->critical(sprintf('Allowed CSP header size of %d bytes exceeded (tried to write %d bytes). Removed style-src hashes: %s. Removed script-src hashes: %s.',
+        $this->logger?->critical(\sprintf('Allowed CSP header size of %d bytes exceeded (tried to write %d bytes). Removed style-src hashes: %s. Removed script-src hashes: %s.',
             $this->maxHeaderLength,
             $headerLength,
             [] === $removedStyleSrc ? 'none' : implode(', ', $removedStyleSrc),

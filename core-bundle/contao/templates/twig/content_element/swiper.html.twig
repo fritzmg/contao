@@ -33,23 +33,23 @@
             {% endblock %}
         </div>
         {% block controls %}
-            {% set button_prev_attributes = attrs()
-                .set('type', 'button')
-                .addClass('swiper-button-prev')
-                .mergeWith(button_prev_attributes|default)
-            %}
-            <button{{ button_prev_attributes }}></button>
-            {% set button_next_attributes = attrs()
-                .set('type', 'button')
-                .addClass('swiper-button-next')
-                .mergeWith(button_next_attributes|default)
-            %}
-            <button{{ button_next_attributes }}></button>
-            {% set pagination_attributes = attrs()
-                .addClass('swiper-pagination')
-                .mergeWith(pagination_attributes|default)
-            %}
-            <div{{ pagination_attributes }}></div>
+            {% if not as_editor_view %}
+                {% set button_prev_attributes = attrs()
+                    .addClass('swiper-button-prev')
+                    .mergeWith(button_prev_attributes|default)
+                %}
+                <div{{ button_prev_attributes }}></div>
+                {% set button_next_attributes = attrs()
+                    .addClass('swiper-button-next')
+                    .mergeWith(button_next_attributes|default)
+                %}
+                <div{{ button_next_attributes }}></div>
+                {% set pagination_attributes = attrs()
+                    .addClass('swiper-pagination')
+                    .mergeWith(pagination_attributes|default)
+                %}
+                <div{{ pagination_attributes }}></div>
+            {% endif %}
         {% endblock %}
     </div>
 {% endblock %}
@@ -73,7 +73,10 @@
 
                     let delay = el.getAttribute('data-delay');
                     if (delay > 0) {
-                        opts['autoplay'] = { delay: delay };
+                        opts['autoplay'] = {
+                            delay: delay,
+                            pauseOnMouseEnter: true,
+                        };
                     }
 
                     new Swiper(el, Object.assign({
@@ -96,9 +99,9 @@
 {% endblock %}
 
 {% block style %}
-    {% set swiper_css_file = asset('css/swiper-bundle.min.css', 'contao-components/swiper') %}
-
-    {% add "swiper_css" to head %}
-        {% with {file: swiper_css_file} %}{{ block('stylesheet_component') }}{% endwith %}
+    {% add "swiper_css" to stylesheets %}
+        {% with {file: swiper_css_file|default(asset('css/swiper-bundle.min.css', 'contao-components/swiper'))} %}
+            {{ block('stylesheet_component') }}
+        {% endwith %}
     {% endadd %}
 {% endblock %}

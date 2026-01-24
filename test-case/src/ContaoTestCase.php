@@ -273,7 +273,7 @@ abstract class ContaoTestCase extends TestCase
     protected function mockTokenStorage(string $class): TokenStorageInterface
     {
         if (!is_a($class, User::class, true)) {
-            throw new \InvalidArgumentException(sprintf('Class "%s" is not a Contao\User class', $class));
+            throw new \InvalidArgumentException(\sprintf('Class "%s" is not a Contao\User class', $class));
         }
 
         $token = $this->createMock(TokenInterface::class);
@@ -359,9 +359,7 @@ abstract class ContaoTestCase extends TestCase
                     continue;
                 }
 
-                $defaultValue = $property->getDefaultValue();
-
-                if (!$property->hasDefaultValue() || $property->getValue() === $defaultValue) {
+                if (!$property->hasDefaultValue() || $property->getValue() === ($defaultValue = $property->getDefaultValue())) {
                     continue;
                 }
 

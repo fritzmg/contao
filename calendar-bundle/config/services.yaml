@@ -12,6 +12,19 @@ services:
         arguments:
             - '@contao.framework'
 
+    contao_calendar.insert_tag.event:
+        class: Contao\CalendarBundle\InsertTag\EventInsertTag
+        arguments:
+            - '@contao.framework'
+            - '@contao.routing.content_url_generator'
+
+    contao_calendar.listener.data_container.event_search:
+        class: Contao\CalendarBundle\EventListener\DataContainer\EventSearchListener
+        arguments:
+            - '@contao.framework'
+            - '@database_connection'
+            - '@contao.routing.content_url_generator'
+
     contao_calendar.listener.data_container.start_stop_validation:
         class: Contao\CoreBundle\EventListener\DataContainer\StartStopValidationListener
         arguments:
@@ -24,12 +37,6 @@ services:
         arguments:
             - '@contao.framework'
 
-    contao_calendar.listener.insert_tags:
-        class: Contao\CalendarBundle\EventListener\InsertTagsListener
-        arguments:
-            - '@contao.framework'
-            - '@contao.routing.content_url_generator'
-
     contao_calendar.listener.preview_url_convert:
         class: Contao\CalendarBundle\EventListener\PreviewUrlConvertListener
         arguments:
@@ -39,8 +46,9 @@ services:
     contao_calendar.listener.preview_url_create:
         class: Contao\CalendarBundle\EventListener\PreviewUrlCreateListener
         arguments:
-            - '@request_stack'
             - '@contao.framework'
+            - '@contao.data_container.dca_url_analyzer'
+            - '@database_connection'
 
     contao_calendar.listener.sitemap:
         class: Contao\CalendarBundle\EventListener\SitemapListener
@@ -66,6 +74,12 @@ services:
         class: Contao\CalendarBundle\Security\Voter\CalendarAccessVoter
         arguments:
             - '@security.access.decision_manager'
+
+    contao_calendar.security.calendar_content_voter:
+        class: Contao\CalendarBundle\Security\Voter\CalendarContentVoter
+        arguments:
+            - '@security.access.decision_manager'
+            - '@database_connection'
 
     contao_calendar.security.calendar_events_access_voter:
         class: Contao\CalendarBundle\Security\Voter\CalendarEventsAccessVoter

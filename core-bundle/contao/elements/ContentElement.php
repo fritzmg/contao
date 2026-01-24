@@ -39,10 +39,10 @@ use Contao\Model\Collection;
  * @property string|array|null $listitems
  * @property string|array|null $tableitems
  * @property string            $summary
- * @property string|boolean    $thead
- * @property string|boolean    $tfoot
- * @property string|boolean    $tleft
- * @property string|boolean    $sortable
+ * @property boolean           $thead
+ * @property boolean           $tfoot
+ * @property boolean           $tleft
+ * @property boolean           $sortable
  * @property string|integer    $sortIndex
  * @property string            $sortOrder
  * @property string            $mooHeadline
@@ -259,8 +259,6 @@ abstract class ContentElement extends Frontend
 
 		if (!empty($this->objModel->classes) && \is_array($this->objModel->classes))
 		{
-			trigger_deprecation('contao/core-bundle', '5.0', 'Using "$model->classes" is deprecated, update the "cssID" property instead.');
-
 			$this->Template->class .= ' ' . implode(' ', $this->objModel->classes);
 		}
 

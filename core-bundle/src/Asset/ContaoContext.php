@@ -16,11 +16,11 @@ use Contao\PageModel;
 use Symfony\Component\Asset\Context\ContextInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-/**
- * @internal Do not use this class in your code; use the "contao.assets.assets_context" or "contao.assets.files_context" service instead
- */
 class ContaoContext implements ContextInterface
 {
+    /**
+     * @internal Do not use this class in your code; use the "contao.assets.assets_context" or "contao.assets.files_context" service instead
+     */
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly string $field,
@@ -41,7 +41,7 @@ class ContaoContext implements ContextInterface
         $protocol = $this->isSecure() ? 'https' : 'http';
         $relative = preg_replace('@https?://@', '', $staticUrl);
 
-        return sprintf('%s://%s%s', $protocol, $relative, $request->getBasePath());
+        return \sprintf('%s://%s%s', $protocol, $relative, $request->getBasePath());
     }
 
     public function isSecure(): bool

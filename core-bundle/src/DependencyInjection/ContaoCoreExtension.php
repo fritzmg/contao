@@ -94,7 +94,7 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
     public function load(array $configs, ContainerBuilder $container): void
     {
         if ('UTF-8' !== $container->getParameter('kernel.charset')) {
-            throw new RuntimeException(sprintf('Using the charset "%s" is not supported, use "UTF-8" instead', $container->getParameter('kernel.charset')));
+            throw new RuntimeException(\sprintf('Using the charset "%s" is not supported, use "UTF-8" instead', $container->getParameter('kernel.charset')));
         }
 
         $projectDir = (string) $container->getParameter('kernel.project_dir');
@@ -202,7 +202,7 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
 
                     if ($reflector instanceof \ReflectionMethod) {
                         if (isset($tagAttributes['method'])) {
-                            throw new LogicException(sprintf('%s attribute cannot declare a method on "%s::%s()".', $attributeClass, $reflector->getDeclaringClass()->getName(), $reflector->getName()));
+                            throw new LogicException(\sprintf('%s attribute cannot declare a method on "%s::%s()".', $attributeClass, $reflector->getDeclaringClass()->getName(), $reflector->getName()));
                         }
 
                         $tagAttributes['method'] = $reflector->getName();
@@ -243,6 +243,19 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
 
     private function handleMessengerConfig(array $config, ContainerBuilder $container): void
     {
+        if ($container->hasDefinition('contao.messenger.web_worker')) {
+            $definition = $container->getDefinition('contao.messenger.web_worker');
+
+            // Remove the entire service and all its listeners if there are no web worker
+            // transports configured
+            if ([] === $config['messenger']['web_worker']['transports']) {
+                $container->removeDefinition('contao.messenger.web_worker');
+            } else {
+                $definition->setArgument(2, $config['messenger']['web_worker']['transports']);
+                $definition->setArgument(3, $config['messenger']['web_worker']['grace_period']);
+            }
+        }
+
         if (
             !$container->hasDefinition('contao.cron.supervise_workers')
             || !$container->hasDefinition('contao.command.supervise_workers')
@@ -259,8 +272,8 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
             $supervisor->addArgument('%kernel.cache_dir%/worker-supervisor');
 
             $command = $container->getDefinition('contao.command.supervise_workers');
-            $command->setArgument(2, $supervisor);
-            $command->setArgument(3, $config['messenger']['workers']);
+            $command->setArgument('$supervisor', $supervisor);
+            $command->setArgument('$workers', $config['messenger']['workers']);
         }
 
         // No workers defined -> remove our cron job and the command
@@ -306,7 +319,7 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
             $container->removeDefinition('contao.listener.search_index');
         } else {
             // Configure the search index listener
-            $container->getDefinition('contao.listener.search_index')->setArgument(2, $features);
+            $container->getDefinition('contao.listener.search_index')->setArgument('$enabledFeatures', $features);
         }
     }
 
@@ -322,8 +335,8 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
         }
 
         $factory = $container->getDefinition('contao.crawl.escargot.factory');
-        $factory->setArgument(3, $config['crawl']['additional_uris']);
-        $factory->setArgument(4, $config['crawl']['default_http_client_options']);
+        $factory->setArgument(4, $config['crawl']['additional_uris']);
+        $factory->setArgument(5, $config['crawl']['default_http_client_options']);
     }
 
     /**
@@ -455,8 +468,6 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
 
         if ($container->hasParameter('security.role_hierarchy.roles') && \count($container->getParameter('security.role_hierarchy.roles')) > 0) {
             $tokenChecker->replaceArgument(4, new Reference('security.access.role_hierarchy_voter'));
-        } else {
-            $tokenChecker->replaceArgument(4, new Reference('security.access.simple_role_voter'));
         }
     }
 

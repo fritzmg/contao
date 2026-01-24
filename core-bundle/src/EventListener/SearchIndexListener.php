@@ -34,6 +34,7 @@ class SearchIndexListener
     public function __construct(
         private readonly MessageBusInterface $messageBus,
         private readonly string $fragmentPath = '_fragment',
+        private readonly string $contaoBackendRoutePrefix = '/contao',
         private readonly int $enabledFeatures = self::FEATURE_INDEX | self::FEATURE_DELETE,
     ) {
     }
@@ -50,33 +51,49 @@ class SearchIndexListener
         }
 
         $request = $event->getRequest();
+
+        // Only handle GET requests (see #1194, #7240)
+        if (!$request->isMethod(Request::METHOD_GET)) {
+            return;
+        }
+
+        // Do not handle fragments
+        if (preg_match('~(?:^|/)'.preg_quote($this->fragmentPath, '~').'/~', $request->getPathInfo())) {
+            return;
+        }
+
+        // Do not handle Contao backend requests
+        if (preg_match('~(?:^|/)'.preg_quote(ltrim($this->contaoBackendRoutePrefix, '/'), '~').'(?:$|/)~', $request->getPathInfo())) {
+            return;
+        }
+
+        // Do not handle profiler requests
+        if (preg_match('~(?:^|/)_wdt/~', $request->getPathInfo())) {
+            return;
+        }
+
         $document = Document::createFromRequestResponse($request, $response);
         $needsIndex = $this->needsIndex($request, $response, $document);
-        $success = $event->getResponse()->isSuccessful();
+        $needsDelete = $this->needsDelete($response, $document);
 
-        if ($needsIndex && $success && $this->enabledFeatures & self::FEATURE_INDEX) {
+        if ($needsIndex && $this->enabledFeatures & self::FEATURE_INDEX) {
             $this->messageBus->dispatch(SearchIndexMessage::createWithIndex($document));
         }
 
-        if (!$success && $this->enabledFeatures & self::FEATURE_DELETE) {
+        if ($needsDelete && $this->enabledFeatures & self::FEATURE_DELETE) {
             $this->messageBus->dispatch(SearchIndexMessage::createWithDelete($document));
         }
     }
 
     private function needsIndex(Request $request, Response $response, Document $document): bool
     {
-        // Only handle GET requests (see #1194)
-        if (!$request->isMethod(Request::METHOD_GET)) {
+        // Do not index if response was not successful
+        if (!$response->isSuccessful()) {
             return false;
         }
 
         // Do not index if called by crawler
         if (Factory::USER_AGENT === $request->headers->get('User-Agent')) {
-            return false;
-        }
-
-        // Do not handle fragments
-        if (preg_match('~(?:^|/)'.preg_quote($this->fragmentPath, '~').'/~', $request->getPathInfo())) {
             return false;
         }
 
@@ -98,5 +115,37 @@ class SearchIndexListener
 
         // If there are no json ld scripts at all, this should not be handled by our indexer
         return [] !== $document->extractJsonLdScripts();
+    }
+
+    private function needsDelete(Response $response, Document $document): bool
+    {
+        // Always delete on 404 and 410 responses
+        if (\in_array($response->getStatusCode(), [Response::HTTP_NOT_FOUND, Response::HTTP_GONE], true)) {
+            return true;
+        }
+
+        // Do not delete if the response was not successful
+        if (!$response->isSuccessful()) {
+            return false;
+        }
+
+        // Delete if the X-Robots-Tag header contains "noindex"
+        if (str_contains($response->headers->get('X-Robots-Tag', ''), 'noindex')) {
+            return true;
+        }
+
+        try {
+            $robots = $document->getContentCrawler()->filterXPath('//head/meta[@name="robots"]')->first()->attr('content');
+
+            // Delete if the meta robots tag contains "noindex"
+            if (str_contains($robots, 'noindex')) {
+                return true;
+            }
+        } catch (\Exception) {
+            // No meta robots tag found
+        }
+
+        // Otherwise do not delete
+        return false;
     }
 }

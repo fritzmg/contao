@@ -72,7 +72,7 @@ class InsertTags extends Controller
 
 		if (self::$intRecursionCount > self::MAX_NESTING_LEVEL)
 		{
-			throw new \RuntimeException(sprintf('Maximum insert tag nesting level of %s reached', self::MAX_NESTING_LEVEL));
+			throw new \RuntimeException(\sprintf('Maximum insert tag nesting level of %s reached', self::MAX_NESTING_LEVEL));
 		}
 
 		++self::$intRecursionCount;
@@ -121,7 +121,7 @@ class InsertTags extends Controller
 
 		if ($tags === false)
 		{
-			throw new \RuntimeException(sprintf('PCRE: %s', preg_last_error_msg()), preg_last_error());
+			throw new \RuntimeException(\sprintf('PCRE: %s', preg_last_error_msg()), preg_last_error());
 		}
 
 		if (\count($tags) < 2)
@@ -186,7 +186,7 @@ class InsertTags extends Controller
 			{
 				if (($elements[1] ?? null) == 'referer' || str_starts_with($elements[0], 'cache_'))
 				{
-					trigger_deprecation('contao/core-bundle', '5.0', 'Insert tag naming conventions {{cache_*}} and {{*::referer}} for fragments have been deprecated and will no longer work in Contao 6. Use #[AsInsertTag(asFragment: true)] instead.', $elements[0], strtolower($elements[0]));
+					trigger_deprecation('contao/core-bundle', '5.0', 'The insert tag naming conventions {{cache_*}} and {{*::referer}} for fragments are deprecated and will no longer work in Contao 6. Use {{fragment::*}} instead.', $elements[0], strtolower($elements[0]));
 
 					$attributes = array('insertTag' => '{{' . $strTag . '}}');
 
