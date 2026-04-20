@@ -1371,7 +1371,7 @@ abstract class Widget extends Controller
 						unset($unknown[$i]);
 					}
 
-					$arrAttributes['options'][] = array('value'=>$value, 'label'=>($blnUseReference && isset($arrData['reference'][$v]) ? (($ref = (\is_array($arrData['reference'][$v]) ? $arrData['reference'][$v][0] : $arrData['reference'][$v])) ? $ref : $v) : $v));
+					$arrAttributes['options'][] = array('value'=>$value, 'label'=>($blnUseReference && isset($arrData['reference'][$value]) ? (($ref = (\is_array($arrData['reference'][$value]) ? $arrData['reference'][$value][0] : $arrData['reference'][$value])) ? $ref : $v) : $v));
 					continue;
 				}
 
@@ -1387,7 +1387,7 @@ abstract class Widget extends Controller
 						unset($unknown[$i]);
 					}
 
-					$arrAttributes['options'][$key][] = array('value'=>$value, 'label'=>($blnUseReference && isset($arrData['reference'][$vv]) ? (($ref = (\is_array($arrData['reference'][$vv]) ? $arrData['reference'][$vv][0] : $arrData['reference'][$vv])) ? $ref : $vv) : $vv));
+					$arrAttributes['options'][$key][] = array('value'=>$value, 'label'=>($blnUseReference && isset($arrData['reference'][$value]) ? (($ref = (\is_array($arrData['reference'][$value]) ? $arrData['reference'][$value][0] : $arrData['reference'][$value])) ? $ref : $vv) : $vv));
 				}
 			}
 
