@@ -259,7 +259,9 @@ class Dbafs implements DbafsInterface, ResetInterface
 
     public function getSupportedFeatures(): int
     {
-        return $this->useLastModified ? DbafsInterface::FEATURE_LAST_MODIFIED : DbafsInterface::FEATURES_NONE;
+        $supportedFeatures = DbafsInterface::FEATURE_FILE_SIZE | DbafsInterface::FEATURE_MIME_TYPE;
+
+        return $this->useLastModified ? $supportedFeatures | DbafsInterface::FEATURE_LAST_MODIFIED : $supportedFeatures;
     }
 
     /**

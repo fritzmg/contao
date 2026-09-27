@@ -246,6 +246,14 @@ $GLOBALS['TL_DCA']['tl_files'] = array
 			'eval'                    => array('rgxp'=>'digit', 'nospace'=>true, 'tl_class'=>'w50'),
 			'sql'                     => "DOUBLE unsigned NOT NULL default 0"
 		),
+		'fileSize' => array
+		(
+			'sql'                     => ['type' => 'integer', 'unsigned' => true, 'notnull' => false],
+		),
+		'mimeType' => array
+		(
+			'sql'                     => ['type' => 'string', 'length' => 255, 'notnull' => false],
+		),
 		'meta' => array
 		(
 			'inputType'               => 'metaWizard',
