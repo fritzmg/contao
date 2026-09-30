@@ -123,4 +123,8 @@ return (new Configuration())
 
     // We only use the assets from the web-auth/webauthn-stimulus package.
     ->ignoreErrorsOnPackage('web-auth/webauthn-stimulus', [ErrorType::UNUSED_DEPENDENCY])
+
+    // WebauthnSerializerFactory requires these packages to build its normalizers.
+    ->ignoreErrorsOnPackage('phpdocumentor/reflection-docblock', [ErrorType::UNUSED_DEPENDENCY])
+    ->ignoreErrorsOnPackage('symfony/property-info', [ErrorType::UNUSED_DEPENDENCY])
 ;

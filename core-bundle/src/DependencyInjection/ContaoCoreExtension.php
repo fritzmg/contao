@@ -27,6 +27,9 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsPage;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsPickerProvider;
 use Contao\CoreBundle\DependencyInjection\Filesystem\ConfigureFilesystemInterface;
 use Contao\CoreBundle\DependencyInjection\Filesystem\FilesystemConfiguration;
+use Contao\CoreBundle\Doctrine\DBAL\Types\AaguidType;
+use Contao\CoreBundle\Doctrine\DBAL\Types\Base64Type;
+use Contao\CoreBundle\Doctrine\DBAL\Types\TrustPathType;
 use Contao\CoreBundle\EventListener\SearchIndexListener;
 use Contao\CoreBundle\Fragment\Reference\ContentElementReference;
 use Contao\CoreBundle\Fragment\Reference\FrontendModuleReference;
@@ -79,6 +82,16 @@ class ContaoCoreExtension extends Extension implements PrependExtensionInterface
         // Prepend the backend route prefix to make it available for third-party
         // bundle configuration
         $container->setParameter('contao.backend.route_prefix', $config['backend']['route_prefix']);
+
+        if ($container->hasExtension('doctrine')) {
+            $container->prependExtensionConfig('doctrine', [
+                'dbal' => ['types' => [
+                    'aaguid' => AaguidType::class,
+                    'base64' => Base64Type::class,
+                    'trust_path' => TrustPathType::class,
+                ]],
+            ]);
+        }
 
         // Make sure channels for all Contao log actions are available
         if ($container->hasExtension('monolog')) {

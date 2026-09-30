@@ -873,13 +873,6 @@ services:
         arguments:
             - '@doctrine'
 
-    contao.repository.webauthn_user_entity:
-        class: Contao\CoreBundle\Repository\WebauthnUserEntityRepository
-        arguments:
-            - '@contao.security.backend_user_provider'
-            - '@contao.security.frontend_user_provider'
-            - '@contao.routing.scope_matcher'
-
     contao.resource_finder:
         class: Contao\CoreBundle\Config\ResourceFinder
         public: true
@@ -1340,16 +1333,20 @@ services:
         arguments:
             - '@contao.framework'
 
+    contao.security.webauthn:
+        class: Contao\CoreBundle\Security\Webauthn\Webauthn
+        arguments:
+            - '@contao.repository.webauthn_credential'
+
+    contao.security.webauthn_authenticator:
+        class: Contao\CoreBundle\Security\Authenticator\WebauthnAuthenticator
+        arguments:
+            - '@contao.security.webauthn'
+            - '@contao.security.backend_user_provider'
+            - '@contao.security.frontend_user_provider'
+
     contao.security.webauthn_credential_voter:
         class: Contao\CoreBundle\Security\Voter\WebauthnCredentialVoter
-
-    contao.serializer.webauthn_rp_entity_normalizer:
-        class: Contao\CoreBundle\Serializer\WebauthnRpEntityNormalizer
-        arguments:
-            - '@request_stack'
-            - '@Webauthn\Denormalizer\PublicKeyCredentialRpEntityDenormalizer'
-        tags:
-            - { name: serializer.normalizer, priority: 1025 }
 
     contao.session.factory:
         class: Contao\CoreBundle\Session\SessionFactory
@@ -1600,12 +1597,6 @@ services:
         class: Contao\CoreBundle\Twig\Runtime\UrlRuntime
         arguments:
             - '@request_stack'
-
-    contao.webauthn.user_entity_guesser:
-        class: Webauthn\Bundle\Security\Guesser\CurrentUserEntityGuesser
-        arguments:
-            - '@security.token_storage'
-            - '@contao.repository.webauthn_user_entity'
 
     # Autowiring aliases
     Contao\CoreBundle\Cache\EntityCacheTags: '@contao.cache.entity_tags'

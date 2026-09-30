@@ -30,7 +30,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Kernel;
 use Terminal42\ServiceAnnotationBundle\Terminal42ServiceAnnotationBundle;
 use Twig\Extra\TwigExtraBundle\TwigExtraBundle;
-use Webauthn\Bundle\WebauthnBundle;
 
 class AppKernel extends Kernel
 {
@@ -44,7 +43,6 @@ class AppKernel extends Kernel
             new MonologBundle(), // prevents a lot of [debug] lines in the console output (see #1927)
             new DoctrineBundle(),
             new SchebTwoFactorBundle(),
-            new WebauthnBundle(),
             new KnpTimeBundle(),
             new KnpMenuBundle(),
             new CmfRoutingBundle(),

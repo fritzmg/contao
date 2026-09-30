@@ -5,8 +5,8 @@
 {% set passkey_config = {
     unsupported: 'ERR.passkeysUnsupported'|trans,
     attestationFailure: 'ERR.passkeyAttestationFailure'|trans,
-    requestUrl: path('webauthn.controller.creation.request.contao_frontend_add_authenticator'),
-    responseUrl: path('webauthn.controller.creation.response.contao_frontend_add_authenticator'),
+    requestUrl: path('contao_frontend_webauthn_registration_options'),
+    responseUrl: path('contao_frontend_webauthn_registration_result'),
     redirect: redirect|default,
 } %}
 

@@ -4,8 +4,8 @@
 {% set passkey_config = {
     unsupported: 'ERR.passkeysUnsupported'|trans,
     assertionFailure: 'ERR.passkeyAssertionFailure'|trans,
-    optionsUrl: path('webauthn.controller.security.contao_frontend.request.options'),
-    resultUrl: path('webauthn.controller.security.contao_frontend.request.result'),
+    optionsUrl: path('contao_frontend_webauthn_login_options'),
+    resultUrl: path('contao_frontend_webauthn_login_result'),
     requestTokenScript: path('contao_frontend_request_token_script'),
     redirect: redirect|default,
 } %}

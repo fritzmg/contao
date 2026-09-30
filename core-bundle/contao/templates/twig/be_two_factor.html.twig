@@ -164,8 +164,8 @@
     </turbo-frame>
     <div class="add_passkey"
          data-controller="contao--webauthn-registration contao--webauthn-error"
-         data-contao--webauthn-registration-result-url-value="{{ path('webauthn.controller.creation.response.contao_backend_add_authenticator') }}"
-         data-contao--webauthn-registration-options-url-value="{{ path('webauthn.controller.creation.request.contao_backend_add_authenticator') }}"
+         data-contao--webauthn-registration-result-url-value="{{ path('contao_backend_webauthn_registration_result') }}"
+         data-contao--webauthn-registration-options-url-value="{{ path('contao_backend_webauthn_registration_options') }}"
          data-contao--webauthn-registration-success-redirect-uri-value="{{ webauthnCreationSuccessRedirectUri }}"
          data-contao--webauthn-error-unsupported-message-value="{{ 'ERR.passkeysUnsupported'|trans }}"
          data-contao--webauthn-error-attestation-failure-message-value="{{ 'ERR.passkeyAttestationFailure'|trans }}"

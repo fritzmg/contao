@@ -224,25 +224,10 @@ class PluginTest extends ContaoTestCase
 
     public function testGetRouteCollectionInProd(): void
     {
-        $loader = $this->createMock(LoaderInterface::class);
-        $loader
-            ->expects($this->atLeastOnce())
-            ->method('load')
-            ->willReturnCallback(
-                static function (string $file): RouteCollection {
-                    $collection = new RouteCollection();
-                    $collection->add(basename($file).'_foobar', new Route('/foobar'));
-
-                    return $collection;
-                },
-            )
-        ;
-
         $resolver = $this->createMock(LoaderResolverInterface::class);
         $resolver
-            ->expects($this->atLeastOnce())
+            ->expects($this->never())
             ->method('resolve')
-            ->willReturn($loader)
         ;
 
         $kernel = $this->createMock(KernelInterface::class);
@@ -256,8 +241,7 @@ class PluginTest extends ContaoTestCase
         $collection = $plugin->getRouteCollection($resolver, $kernel);
         $routes = array_values($collection->all());
 
-        $this->assertCount(1, $routes);
-        $this->assertSame('/foobar', $routes[0]->getPath());
+        $this->assertSame([], $routes);
     }
 
     public function testGetRouteCollectionInDev(): void
@@ -294,10 +278,9 @@ class PluginTest extends ContaoTestCase
         $collection = $plugin->getRouteCollection($resolver, $kernel);
         $routes = array_values($collection->all());
 
-        $this->assertCount(3, $routes);
-        $this->assertSame('/foobar', $routes[0]->getPath());
-        $this->assertSame('/_wdt/foobar', $routes[1]->getPath());
-        $this->assertSame('/_profiler/foobar', $routes[2]->getPath());
+        $this->assertCount(2, $routes);
+        $this->assertSame('/_wdt/foobar', $routes[0]->getPath());
+        $this->assertSame('/_profiler/foobar', $routes[1]->getPath());
     }
 
     public function testReturnsApiCommands(): void

@@ -299,3 +299,7 @@ services:
             - '@contao.routing.content_url_generator'
         tags:
             - controller.service_arguments
+
+    Contao\CoreBundle\Controller\WebauthnController:
+        arguments:
+            - '@contao.security.webauthn'

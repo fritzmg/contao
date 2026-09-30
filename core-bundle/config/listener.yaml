@@ -695,26 +695,6 @@ services:
         arguments:
             - '@doctrine.orm.entity_manager'
 
-    contao.listener.webauthn_route_backend:
-        class: Contao\CoreBundle\EventListener\WebauthnRouteListener
-        arguments:
-            -
-                - webauthn.controller.creation.request.contao_backend_add_authenticator
-                - webauthn.controller.creation.response.contao_backend_add_authenticator
-                - webauthn.controller.security.contao_backend.request.options
-                - webauthn.controller.security.contao_backend.request.result
-            - backend
-
-    contao.listener.webauthn_route_frontend:
-        class: Contao\CoreBundle\EventListener\WebauthnRouteListener
-        arguments:
-            -
-                - webauthn.controller.creation.request.contao_frontend_add_authenticator
-                - webauthn.controller.creation.response.contao_frontend_add_authenticator
-                - webauthn.controller.security.contao_frontend.request.options
-                - webauthn.controller.security.contao_frontend.request.result
-            - frontend
-
     contao.listener.widget.custom_rgxp:
         class: Contao\CoreBundle\EventListener\Widget\CustomRgxpListener
         arguments:

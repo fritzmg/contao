@@ -16,17 +16,14 @@ use Contao\CoreBundle\Entity\WebauthnCredential;
 use Contao\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\ManagerRegistry;
-use Webauthn\Bundle\Repository\CanSaveCredentialSource;
-use Webauthn\Bundle\Repository\PublicKeyCredentialSourceRepositoryInterface;
-use Webauthn\PublicKeyCredentialSource;
-use Webauthn\PublicKeyCredentialUserEntity;
+use Webauthn\CredentialRecord;
 
 /**
  * @template-extends ServiceEntityRepository<WebauthnCredential>
  *
  * @internal
  */
-class WebauthnCredentialRepository extends ServiceEntityRepository implements PublicKeyCredentialSourceRepositoryInterface, CanSaveCredentialSource
+class WebauthnCredentialRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
@@ -49,7 +46,7 @@ class WebauthnCredentialRepository extends ServiceEntityRepository implements Pu
         ;
     }
 
-    public function saveCredentialSource(PublicKeyCredentialSource $publicKeyCredentialSource): void
+    public function saveCredentialSource(CredentialRecord $publicKeyCredentialSource): void
     {
         if (!$publicKeyCredentialSource instanceof WebauthnCredential) {
             $publicKeyCredentialSource = new WebauthnCredential(
@@ -62,24 +59,15 @@ class WebauthnCredentialRepository extends ServiceEntityRepository implements Pu
                 $publicKeyCredentialSource->credentialPublicKey,
                 $publicKeyCredentialSource->userHandle,
                 $publicKeyCredentialSource->counter,
+                $publicKeyCredentialSource->otherUI,
+                $publicKeyCredentialSource->backupEligible,
+                $publicKeyCredentialSource->backupStatus,
+                $publicKeyCredentialSource->uvInitialized,
             );
         }
 
         $this->getEntityManager()->persist($publicKeyCredentialSource);
         $this->getEntityManager()->flush();
-    }
-
-    public function findAllForUserEntity(PublicKeyCredentialUserEntity $publicKeyCredentialUserEntity): array
-    {
-        return $this->getEntityManager()
-            ->createQueryBuilder()
-            ->from(WebauthnCredential::class, 'c')
-            ->select('c')
-            ->where('c.userHandle = :userHandle')
-            ->setParameter(':userHandle', $publicKeyCredentialUserEntity->id)
-            ->getQuery()
-            ->execute()
-        ;
     }
 
     public function findOneByCredentialId(string $publicKeyCredentialId): WebauthnCredential|null
@@ -110,7 +98,7 @@ class WebauthnCredentialRepository extends ServiceEntityRepository implements Pu
         ;
     }
 
-    public function remove(PublicKeyCredentialSource $publicKeyCredentialSource): void
+    public function remove(WebauthnCredential $publicKeyCredentialSource): void
     {
         $this->getEntityManager()->remove($publicKeyCredentialSource);
         $this->getEntityManager()->flush();

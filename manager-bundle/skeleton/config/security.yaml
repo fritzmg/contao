@@ -17,13 +17,8 @@ security:
             user_checker: contao.security.user_checker
             switch_user: true
             login_throttling: ~
-            webauthn:
-                authentication:
-                    enabled: true
-                    profile: contao_backend
-                    routes:
-                        options_path: /_contao/webauthn/backend/login/options
-                        result_path: /_contao/webauthn/backend/login/result
+            custom_authenticators:
+                - contao.security.webauthn_authenticator
 
             login_link:
                 check_route: contao_backend_login_link
@@ -43,13 +38,8 @@ security:
             access_denied_handler: contao.security.access_denied_handler
             switch_user: false
             login_throttling: ~
-            webauthn:
-                authentication:
-                    enabled: true
-                    profile: contao_frontend
-                    routes:
-                        options_path: /_contao/webauthn/frontend/login/options
-                        result_path: /_contao/webauthn/frontend/login/result
+            custom_authenticators:
+                - contao.security.webauthn_authenticator
 
             contao_login:
                 remember_me: true

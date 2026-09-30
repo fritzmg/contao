@@ -517,6 +517,31 @@ module. The `{{calendar_feed:id}}` insert tag is deprecated. You can use `{{link
 
 ## Version 5.6 to 5.7
 
+### Passkeys
+
+Contao now integrates WebauthnLib directly. Remove the `webauthn` configuration section and replace the `webauthn`
+firewall configuration in both `contao_backend` and `contao_frontend` with:
+
+```yaml
+custom_authenticators:
+    - contao.security.webauthn_authenticator
+```
+
+Remove any manually registered `WebauthnBundle` and imports of its routes.
+
+Existing passkeys remain valid. Custom passkey templates must use the new route names:
+
+| Previous route | New route |
+| --- | --- |
+| `webauthn.controller.security.contao_backend.request.options` | `contao_backend_webauthn_login_options` |
+| `webauthn.controller.security.contao_backend.request.result` | `contao_backend_webauthn_login_result` |
+| `webauthn.controller.security.contao_frontend.request.options` | `contao_frontend_webauthn_login_options` |
+| `webauthn.controller.security.contao_frontend.request.result` | `contao_frontend_webauthn_login_result` |
+| `webauthn.controller.creation.request.contao_backend_add_authenticator` | `contao_backend_webauthn_registration_options` |
+| `webauthn.controller.creation.response.contao_backend_add_authenticator` | `contao_backend_webauthn_registration_result` |
+| `webauthn.controller.creation.request.contao_frontend_add_authenticator` | `contao_frontend_webauthn_registration_options` |
+| `webauthn.controller.creation.response.contao_frontend_add_authenticator` | `contao_frontend_webauthn_registration_result` |
+
 ### Referer ID
 
 The request attribute `_contao_referer_id` was removed.

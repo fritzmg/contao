@@ -158,8 +158,8 @@
   </turbo-frame>
   <div class="add_passkey"
     data-controller="contao--webauthn-registration contao--webauthn-error"
-    data-contao--webauthn-registration-result-url-value="<?= $this->route('webauthn.controller.creation.response.contao_backend_add_authenticator') ?>"
-    data-contao--webauthn-registration-options-url-value="<?= $this->route('webauthn.controller.creation.request.contao_backend_add_authenticator') ?>"
+    data-contao--webauthn-registration-result-url-value="<?= $this->route('contao_backend_webauthn_registration_result') ?>"
+    data-contao--webauthn-registration-options-url-value="<?= $this->route('contao_backend_webauthn_registration_options') ?>"
     data-contao--webauthn-registration-success-redirect-uri-value="<?= $this->webauthnCreationSuccessRedirectUri ?>"
     data-contao--webauthn-error-unsupported-message-value="<?= $this->trans('ERR.passkeysUnsupported') ?>"
     data-contao--webauthn-error-attestation-failure-message-value="<?= $this->trans('ERR.passkeyAttestationFailure') ?>"
