@@ -1346,12 +1346,21 @@ services:
         arguments:
             - '@contao.repository.webauthn_credential'
 
-    contao.security.webauthn_authenticator:
+    contao.security.webauthn_authenticator.backend:
         class: Contao\CoreBundle\Security\Authenticator\WebauthnAuthenticator
         arguments:
             - '@contao.security.webauthn'
             - '@contao.security.backend_user_provider'
+            - backend
+            - contao_backend_webauthn_login_result
+
+    contao.security.webauthn_authenticator.frontend:
+        class: Contao\CoreBundle\Security\Authenticator\WebauthnAuthenticator
+        arguments:
+            - '@contao.security.webauthn'
             - '@contao.security.frontend_user_provider'
+            - frontend
+            - contao_frontend_webauthn_login_result
 
     contao.security.webauthn_credential_voter:
         class: Contao\CoreBundle\Security\Voter\WebauthnCredentialVoter

@@ -18,7 +18,7 @@ security:
             switch_user: true
             login_throttling: ~
             custom_authenticators:
-                - contao.security.webauthn_authenticator
+                - contao.security.webauthn_authenticator.backend
 
             login_link:
                 check_route: contao_backend_login_link
@@ -39,7 +39,7 @@ security:
             switch_user: false
             login_throttling: ~
             custom_authenticators:
-                - contao.security.webauthn_authenticator
+                - contao.security.webauthn_authenticator.frontend
 
             contao_login:
                 remember_me: true

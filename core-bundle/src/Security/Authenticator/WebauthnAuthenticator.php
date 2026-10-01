@@ -36,43 +36,31 @@ class WebauthnAuthenticator extends AbstractAuthenticator implements Interactive
 {
     public function __construct(
         private readonly Webauthn $webauthn,
-        private readonly ContaoUserProvider $backendUserProvider,
-        private readonly ContaoUserProvider $frontendUserProvider,
+        private readonly ContaoUserProvider $userProvider,
+        private readonly string $scope,
+        private readonly string $loginResultRoute,
     ) {
     }
 
     public function supports(Request $request): bool
     {
-        return $request->isMethod('POST') && \in_array(
-            $request->attributes->get('_route'),
-            [
-                'contao_backend_webauthn_login_result',
-                'contao_frontend_webauthn_login_result',
-            ],
-            true,
-        );
+        return $request->isMethod('POST') && $this->loginResultRoute === $request->attributes->get('_route');
     }
 
     public function authenticate(Request $request): Passport
     {
         try {
             $credential = $this->webauthn->authenticate($request);
-            $scope = $request->attributes->get('_scope');
-            $provider = match ($scope) {
-                'backend' => $this->backendUserProvider,
-                'frontend' => $this->frontendUserProvider,
-                default => throw new BadCredentialsException('Unknown passkey scope.'),
-            };
 
-            // Load the exact credential owner, even when both scopes share a username.
+            // Load the exact credential owner, even when both scopes share a username
             return new SelfValidatingPassport(new UserBadge(
                 $credential->userHandle,
-                static function (string $handle) use ($provider, $scope): User {
-                    if (!preg_match('/^'.$scope.'\.([1-9][0-9]*)$/D', $handle, $matches)) {
+                function (string $handle): User {
+                    if (!preg_match('/^'.preg_quote($this->scope, '/').'\.([1-9][0-9]*)$/D', $handle, $matches)) {
                         throw new BadCredentialsException('The passkey belongs to another scope.');
                     }
 
-                    $user = $provider->loadUserById((int) $matches[1]);
+                    $user = $this->userProvider->loadUserById((int) $matches[1]);
 
                     if ($user->getPasskeyUserHandle() !== $handle) {
                         throw new BadCredentialsException('Invalid passkey owner.');
@@ -90,7 +78,7 @@ class WebauthnAuthenticator extends AbstractAuthenticator implements Interactive
     {
         $token = parent::createToken($passport, $firewallName);
 
-        // Passkeys require user verification and already satisfy the second factor.
+        // Passkeys require user verification and already satisfy the second factor
         $token->setAttribute(TwoFactorAuthenticator::FLAG_2FA_COMPLETE, true);
 
         return $token;

@@ -523,8 +523,15 @@ Contao now integrates WebauthnLib directly. Remove the `webauthn` configuration 
 firewall configuration in both `contao_backend` and `contao_frontend` with:
 
 ```yaml
-custom_authenticators:
-    - contao.security.webauthn_authenticator
+security:
+    firewalls:
+        contao_backend:
+            custom_authenticators:
+                - contao.security.webauthn_authenticator.backend
+
+        contao_frontend:
+            custom_authenticators:
+                - contao.security.webauthn_authenticator.frontend
 ```
 
 Remove any manually registered `WebauthnBundle` and imports of its routes.
