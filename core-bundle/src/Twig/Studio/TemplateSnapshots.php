@@ -256,7 +256,7 @@ final class TemplateSnapshots
                 $objectsDir = Path::join($this->gitDir, 'objects');
 
                 if ('\\' === \DIRECTORY_SEPARATOR && is_dir($objectsDir)) {
-                    // Clear Git's read-only attribute so Windows can delete the cache.
+                    // Clear Git's read-only attribute so Windows can delete the directory
                     $filesystem->chmod($objectsDir, 0o700, recursive: true);
                 }
             } finally {
