@@ -123,4 +123,4 @@ PersonalAccessToken:
         userId: '@kevin_jones'
         createdAt: '2026-10-12 12:00:00'
         name: E2E
-        secret: 8a427a7bc219a3c161ae4ebea9c8670b7bb735befbc5c74e914610486cc470cb
+        secret: $2y$04$.88DSWyWq1kREktbdDLvseFQ64iqBoMBR9a5nnqGyTXRaD2lE3bdG

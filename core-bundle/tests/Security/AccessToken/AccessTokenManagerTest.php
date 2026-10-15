@@ -18,6 +18,8 @@ use Contao\CoreBundle\Repository\PersonalAccessTokenRepository;
 use Contao\CoreBundle\Security\AccessToken\AccessTokenManager;
 use Contao\CoreBundle\Tests\TestCase;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
+use Symfony\Component\PasswordHasher\PasswordHasherInterface;
 use Symfony\Component\Uid\Uuid;
 
 class AccessTokenManagerTest extends TestCase
@@ -27,16 +29,27 @@ class AccessTokenManagerTest extends TestCase
         $user = $this->createClassWithPropertiesStub(BackendUser::class);
         $user->id = 42;
 
-        $persistedToken = null;
+        $passwordHasher = $this->createMock(PasswordHasherInterface::class);
+        $passwordHasher
+            ->expects($this->once())
+            ->method('hash')
+            ->willReturn('hashed-secret')
+        ;
+
+        $passwordHasherFactory = $this->createMock(PasswordHasherFactoryInterface::class);
+        $passwordHasherFactory
+            ->expects($this->once())
+            ->method('getPasswordHasher')
+            ->willReturn($passwordHasher)
+        ;
 
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager
             ->expects($this->once())
             ->method('persist')
             ->willReturnCallback(
-                function (PersonalAccessToken $personalAccessToken) use (&$persistedToken) {
-                    $persistedToken = $personalAccessToken;
-
+                function (PersonalAccessToken $personalAccessToken) {
+                    $this->assertSame('hashed-secret', $personalAccessToken->getSecret());
                     $this->assertNull($personalAccessToken->getExpiresAt());
                     $this->assertNull($personalAccessToken->getLastUsed());
 
@@ -50,20 +63,19 @@ class AccessTokenManagerTest extends TestCase
             ->method('flush')
         ;
 
-        $accessTokenManager = new AccessTokenManager($entityManager);
+        $accessTokenManager = new AccessTokenManager($passwordHasherFactory, $entityManager);
         $plainToken = $accessTokenManager->createBackendToken($user, 'foobar');
 
         $this->assertStringStartsWith(AccessTokenManager::TOKEN_PREFIX, $plainToken);
-
-        $parsedToken = $accessTokenManager->parseToken($plainToken);
-
-        $this->assertSame($persistedToken->getId()->toBase32(), $parsedToken['id']);
-        $this->assertSame(hash('sha256', $parsedToken['secret']), $persistedToken->getSecret());
+        $this->assertNotNull($accessTokenManager->parseToken($plainToken));
     }
 
     public function testParserSkipsTokensWithWrongFormats(): void
     {
-        $accessTokenManager = new AccessTokenManager($this->createStub(EntityManagerInterface::class));
+        $accessTokenManager = new AccessTokenManager(
+            $this->createStub(PasswordHasherFactoryInterface::class),
+            $this->createStub(EntityManagerInterface::class),
+        );
 
         $this->assertNull($accessTokenManager->parseToken('foobar'));
         $this->assertNull($accessTokenManager->parseToken(AccessTokenManager::TOKEN_PREFIX.'foo'));
@@ -73,7 +85,10 @@ class AccessTokenManagerTest extends TestCase
 
     public function testParsesToken(): void
     {
-        $accessTokenManager = new AccessTokenManager($this->createStub(EntityManagerInterface::class));
+        $accessTokenManager = new AccessTokenManager(
+            $this->createStub(PasswordHasherFactoryInterface::class),
+            $this->createStub(EntityManagerInterface::class),
+        );
 
         $id = Uuid::v7()->toBase32();
         $parsedToken = $accessTokenManager->parseToken(AccessTokenManager::TOKEN_PREFIX.$id.'_bar');
@@ -83,7 +98,7 @@ class AccessTokenManagerTest extends TestCase
 
     public function testValidatesToken(): void
     {
-        $personalAccessToken = new PersonalAccessToken('backend', 42, 'foobar', hash('sha256', 'secret'));
+        $personalAccessToken = new PersonalAccessToken('backend', 42, 'foobar', 'hashed-secret');
         $id = $personalAccessToken->getId()->toBase32();
 
         $repository = $this->createMock(PersonalAccessTokenRepository::class);
@@ -100,7 +115,20 @@ class AccessTokenManagerTest extends TestCase
             ->willReturn($repository)
         ;
 
-        $accessTokenManager = new AccessTokenManager($entityManager);
+        $passwordHasher = $this->createMock(PasswordHasherInterface::class);
+        $passwordHasher
+            ->expects($this->exactly(2))
+            ->method('verify')
+            ->willReturnCallback(static fn (string $hash, string $secret): bool => 'hashed-secret' === $hash && 'secret' === $secret)
+        ;
+
+        $passwordHasherFactory = $this->createStub(PasswordHasherFactoryInterface::class);
+        $passwordHasherFactory
+            ->method('getPasswordHasher')
+            ->willReturn($passwordHasher)
+        ;
+
+        $accessTokenManager = new AccessTokenManager($passwordHasherFactory, $entityManager);
 
         $this->assertSame($personalAccessToken, $accessTokenManager->parseAndValidateToken(AccessTokenManager::TOKEN_PREFIX.$id.'_secret', 'backend'));
         $this->assertNull($accessTokenManager->parseAndValidateToken(AccessTokenManager::TOKEN_PREFIX.$id.'_wrong', 'backend'));
@@ -114,7 +142,7 @@ class AccessTokenManagerTest extends TestCase
             ->method('getRepository')
         ;
 
-        $accessTokenManager = new AccessTokenManager($entityManager);
+        $accessTokenManager = new AccessTokenManager($this->createStub(PasswordHasherFactoryInterface::class), $entityManager);
 
         $this->assertNull($accessTokenManager->parseAndValidateToken(AccessTokenManager::TOKEN_PREFIX.'foo_bar', 'backend'));
     }

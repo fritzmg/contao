@@ -18,14 +18,17 @@ use Contao\CoreBundle\Entity\PersonalAccessToken;
 use Contao\CoreBundle\Repository\PersonalAccessTokenRepository;
 use Contao\StringUtil;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\Uid\Uuid;
 
 class AccessTokenManager
 {
     public const string TOKEN_PREFIX = 'ct_pat_';
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly PasswordHasherFactoryInterface $passwordHasherFactory,
+        private readonly EntityManagerInterface $entityManager,
+    ) {
     }
 
     /**
@@ -53,7 +56,9 @@ class AccessTokenManager
             return null;
         }
 
-        if (!hash_equals($token->getSecret(), $this->hashSecret($parsedToken['secret']))) {
+        $passwordHasher = $this->passwordHasherFactory->getPasswordHasher(PersonalAccessToken::class);
+
+        if (!$passwordHasher->verify($token->getSecret(), $parsedToken['secret'])) {
             return null;
         }
 
@@ -84,20 +89,12 @@ class AccessTokenManager
     private function createToken(string $scope, int $userId, string $name, \DateTimeImmutable|null $expiresAt = null): string
     {
         $plainSecret = StringUtil::encodeBase32(random_bytes(16));
-        $personalAccessToken = new PersonalAccessToken($scope, $userId, $name, $this->hashSecret($plainSecret), $expiresAt);
+        $passwordHasher = $this->passwordHasherFactory->getPasswordHasher(PersonalAccessToken::class);
+        $personalAccessToken = new PersonalAccessToken($scope, $userId, $name, $passwordHasher->hash($plainSecret), $expiresAt);
 
         $this->entityManager->persist($personalAccessToken);
         $this->entityManager->flush();
 
         return \sprintf('%s%s_%s', self::TOKEN_PREFIX, $personalAccessToken->getId()->toBase32(), $plainSecret);
-    }
-
-    /**
-     * The secret consists of 128 random bits, so a fast hash is sufficient and avoids
-     * the overhead of a password hasher on every API request.
-     */
-    private function hashSecret(#[\SensitiveParameter] string $plainSecret): string
-    {
-        return hash('sha256', $plainSecret);
     }
 }

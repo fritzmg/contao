@@ -1202,6 +1202,7 @@ services:
         class: Contao\CoreBundle\Security\AccessToken\AccessTokenManager
         public: true
         arguments:
+            - '@security.password_hasher_factory'
             - '@doctrine.orm.entity_manager'
 
     contao.security.authentication_failure_handler:

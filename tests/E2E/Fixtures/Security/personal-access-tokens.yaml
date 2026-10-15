@@ -31,11 +31,11 @@ PersonalAccessToken:
         userId: '@two_factor_user'
         createdAt: '2026-10-12 12:00:00'
         name: E2E
-        secret: a4f6db599810edab0226069d24d113846eb115c7c8834cf0935407400bc1e355
+        secret: $2y$04$5GB2u4vDkv9vSKWWBRd0XO.sp2gqUIdfjkqy3g614arpwhi3xFU36
     no_two_factor_token:
         id: !!binary AAAAAAAAcACAAAAAAAAAhA==
         scope: backend
         userId: '@no_two_factor_user'
         createdAt: '2026-10-12 12:00:00'
         name: E2E
-        secret: 092b5bb660fb1d32f932eeb6bbfe430a5261f8ea428590794c8b7953afa9e53d
+        secret: $2y$04$WzxbJ4SoGsT/nFkwyc0zcOcHEyN.Wi.X2lkDK0XI.oNqb/4.LJgxq
