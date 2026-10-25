@@ -45,15 +45,18 @@
       <h2 class="sub_headline"><?= $this->trans('MSC.twoFactorBackupCodesLabel') ?></h2>
       <p><?= $this->trans('MSC.twoFactorBackupCodesExplain') ?></p>
       <?php if ($this->showBackupCodes): ?>
-        <div class="tl_message">
-          <p class="tl_info"><?= $this->trans('MSC.twoFactorBackupCodesInfo') ?></p>
+        <div class="backup-codes-list" data-turbo-temporary>
+          <div class="tl_message">
+            <p class="tl_info"><?= $this->trans('MSC.twoFactorBackupCodesInfo') ?></p>
+          </div>
+          <ul class="backup-codes">
+            <?php foreach ($this->backupCodes as $backupCode): ?>
+              <li><code><?= $backupCode ?></code></li>
+            <?php endforeach; ?>
+          </ul>
         </div>
-        <ul class="backup-codes">
-          <?php foreach ($this->backupCodes as $backupCode): ?>
-            <li><code><?= $backupCode ?></code></li>
-          <?php endforeach; ?>
-        </ul>
-      <?php else: ?>
+      <?php endif; ?>
+      <div class="regenerate-backup-codes">
         <?php if (!empty($this->backupCodes)): ?>
           <div class="tl_message">
             <p class="tl_info"><?= $this->trans('MSC.twoFactorBackupCodesRegenerateInfo') ?></p>
@@ -66,7 +69,7 @@
             <button type="submit" class="tl_submit"><?= $this->trans(empty($this->backupCodes) ? 'MSC.twoFactorBackupCodesGenerate' : 'MSC.twoFactorBackupCodesRegenerate') ?></button>
           </div>
         </form>
-      <?php endif; ?>
+      </div>
     </div>
     <div class="tl_trusted_devices">
       <h2 class="sub_headline"><?= $this->trans('MSC.trustedDevices') ?></h2>

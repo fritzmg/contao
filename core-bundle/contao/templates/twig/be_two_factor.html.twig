@@ -46,15 +46,18 @@
             <h2 class="sub_headline">{{ 'MSC.twoFactorBackupCodesLabel'|trans }}</h2>
             <p>{{ 'MSC.twoFactorBackupCodesExplain'|trans }}</p>
             {% if showBackupCodes|default %}
-                <div class="tl_message">
-                    <p class="tl_info">{{ 'MSC.twoFactorBackupCodesInfo'|trans }}</p>
+                <div class="backup-codes-list" data-turbo-temporary>
+                    <div class="tl_message">
+                        <p class="tl_info">{{ 'MSC.twoFactorBackupCodesInfo'|trans }}</p>
+                    </div>
+                    <ul class="backup-codes">
+                        {% for backupCode in backupCodes %}
+                            <li><code>{{ backupCode }}</code></li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                <ul class="backup-codes">
-                    {% for backupCode in backupCodes %}
-                        <li><code>{{ backupCode }}</code></li>
-                    {% endfor %}
-                </ul>
-            {% else %}
+            {% endif %}
+            <div class="regenerate-backup-codes">
                 {% if backupCodes|length %}
                     <div class="tl_message">
                         <p class="tl_info">{{ 'MSC.twoFactorBackupCodesRegenerateInfo'|trans }}</p>
@@ -67,7 +70,7 @@
                         <button type="submit" class="tl_submit">{{ (backupCodes|length == 0 ? 'MSC.twoFactorBackupCodesGenerate' : 'MSC.twoFactorBackupCodesRegenerate')|trans }}</button>
                     </div>
                 </form>
-            {% endif %}
+            </div>
         </div>
         <div class="tl_trusted_devices">
             <h2 class="sub_headline">{{ 'MSC.trustedDevices'|trans }}</h2>
